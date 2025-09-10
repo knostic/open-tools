@@ -73,6 +73,14 @@ PRODUCTION_PACKAGES=(
     "chalk-template:1.1.1"
     "backslash:0.2.1"
     "color:5.0.1"
+    "@duckdb/node-api:1.3.3"
+    "@duckdb/node-bindings:1.3.3"
+    "duckdb:1.3.3"
+    "@duckdb/duckdb-wasm:1.29.2"
+    "prebid.js:10.9.2"
+    "prebid-universal-creative:latest"
+    "prebid:latest"
+    "proto-tinker-wc:0.1.87"
 )
 
 # TEST PACKAGES - Safe dummy packages for testing
