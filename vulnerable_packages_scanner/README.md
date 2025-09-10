@@ -1,7 +1,7 @@
 # 🔒 Vulnerable Packages Scanner
 
 A comprehensive, standalone bash script to detect and purge vulnerable npm packages across your entire system or specific directories.
-This tool addresses the [debug package vulnerability as described by snyk](https://security.snyk.io/vuln/SNYK-JS-DEBUG-12552895)
+This tool addresses the [debug package vulnerability as described by Snyk](https://security.snyk.io/vuln/SNYK-JS-DEBUG-12552895)
 
 ## 🚀 Quick Start
 
