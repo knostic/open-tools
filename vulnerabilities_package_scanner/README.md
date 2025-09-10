@@ -123,24 +123,24 @@ REPORT_FILE=my-report.json ./main_script.sh
 ### **Mode Switching**
 The script includes both TEST and PRODUCTION modes:
 
-**TEST Mode (Default - Safe)**
+**PRODUCTION Mode (Default)**
+- Uses real vulnerable packages from supply chain attacks
+- 27 known vulnerable packages
+- For actual security scanning in production environments
+
+**TEST Mode (Safe for Testing)**
 - Uses safe test packages (lodash:4.17.21) - a legitimate, non-malicious package
 - Perfect for testing the scanner functionality and purge operations in a controlled environment
 - Allows you to verify that the scan and purge mechanisms work correctly without risk
 - No risk of false positives or accidental removal of real packages
 
-**PRODUCTION Mode**
-- Uses real vulnerable packages from supply chain attacks
-- 27 known vulnerable packages
-- For actual security scanning in production environments
-
-To switch modes, edit line 78 in the script:
+To switch modes, edit line 93 in the script:
 ```bash
-# For TESTING (default):
-SCAN_MODE="TEST"
-
-# For PRODUCTION:
+# For PRODUCTION (default):
 SCAN_MODE="PRODUCTION"
+
+# For TESTING:
+SCAN_MODE="TEST"
 ```
 
 ## 🧪 Testing with White Package
@@ -170,7 +170,10 @@ npm install lodash@4.17.21
 # In your existing project directory
 npm install lodash@4.17.21
 
-# Test the scanner (make sure SCAN_MODE="TEST" in the script)
+# Switch to TEST mode first (edit line 93 in main_script.sh)
+# Change: SCAN_MODE="PRODUCTION" to SCAN_MODE="TEST"
+
+# Test the scanner
 ./main_script.sh
 ```
 
@@ -194,11 +197,13 @@ npm install lodash@4.17.21
 - **✅ Reversible**: Easy to reinstall if needed
 
 ### **Testing Workflow**
-1. **Install lodash**: `npm install lodash@4.17.21`
-2. **Verify scan**: `./main_script.sh` (should detect lodash)
-3. **Test dry-run**: `./main_script.sh --purge --dry-run` (preview removal)
-4. **Test purge**: `./main_script.sh --purge --yes` (actual removal)
-5. **Reinstall if needed**: `npm install lodash@4.17.21`
+1. **Switch to TEST mode**: Edit line 93 in `main_script.sh` to set `SCAN_MODE="TEST"`
+2. **Install lodash**: `npm install lodash@4.17.21`
+3. **Verify scan**: `./main_script.sh` (should detect lodash)
+4. **Test dry-run**: `./main_script.sh --purge --dry-run` (preview removal)
+5. **Test purge**: `./main_script.sh --purge --yes` (actual removal)
+6. **Reinstall if needed**: `npm install lodash@4.17.21`
+7. **Switch back to PRODUCTION**: Change `SCAN_MODE="TEST"` back to `SCAN_MODE="PRODUCTION"`
 
 ## 🚨 Vulnerable Packages
 
@@ -243,6 +248,8 @@ npm install lodash@4.17.21
 4. **Test in controlled environment**: Install lodash to verify scan/purge functionality works
 5. **Backup important data** before purging in production
 6. **Review results** before confirming purge operations
+
+**Note**: The script defaults to PRODUCTION mode, which scans for real vulnerable packages. For testing, switch to TEST mode to use safe packages.
 
 ### **Permissions**
 - **Read access** required for scanning
