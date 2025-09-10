@@ -13,7 +13,7 @@ This repository contains standalone tools designed to solve common problems deve
 
 ## 📦 Available Tools
 
-### 🔒 [Vulnerable Packages Scanner](./vulnerabilities_package_scanner/)
+### 🔒 [Vulnerable Packages Scanner](./vulnerable_packages_scanner/)
 
 A comprehensive bash script to detect and purge vulnerable npm packages across your entire system or specific directories.
 
@@ -26,7 +26,7 @@ A comprehensive bash script to detect and purge vulnerable npm packages across y
 
 **Quick Start:**
 ```bash
-cd vulnerabilities_package_scanner
+cd vulnerable_packages_scanner
 chmod +x main_script.sh
 ./main_script.sh --help
 ```
