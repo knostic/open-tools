@@ -18,11 +18,11 @@ This repository contains standalone tools designed to solve common problems deve
 A comprehensive bash script to detect and purge vulnerable npm packages across your entire system or specific directories.
 
 **Features:**
-- Scans for known vulnerable packages from supply chain attacks
+- Scans for 27 known vulnerable packages from supply chain attacks
 - Supports multiple package managers (npm, yarn, pnpm, bun)
 - Safe defaults with dry-run mode
 - JSON reporting and CI/CD integration
-- 27 known vulnerable packages supported
+- All packages verified as supply chain attack vectors
 
 **Quick Start:**
 ```bash
