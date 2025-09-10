@@ -90,7 +90,7 @@ TEST_PACKAGES=(
 
 # MODE SWITCH - Change this to switch between TEST and PRODUCTION modes
 # Set to "TEST" for testing mode, "PRODUCTION" for production mode
-SCAN_MODE="TEST"
+SCAN_MODE="PRODUCTION"
 
 # Load vulnerable packages based on mode
 load_vulnerable_packages() {
