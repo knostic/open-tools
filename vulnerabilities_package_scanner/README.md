@@ -13,7 +13,7 @@ chmod +x main_script.sh
 
 ### **Basic Usage**
 ```bash
-# Check current directory for vulnerabilities
+# Check current directory for vulnerabilities (default - safe, non-destructive)
 ./main_script.sh
 
 # Check entire system
@@ -25,6 +25,10 @@ chmod +x main_script.sh
 # Safe preview of what would be purged
 ./main_script.sh --purge --dry-run
 ```
+
+**Default Behavior**: Running `./main_script.sh` with no flags performs a **safe, non-destructive scan** of the current directory only. No packages are purged or modified - it only reports vulnerabilities found.
+
+**Testing**: To test the scanner safely, install lodash (`npm install lodash@4.17.21`) and use TEST mode to verify scan and purge functionality works correctly.
 
 ## 🎯 Overview
 
@@ -54,7 +58,7 @@ This tool scans for known vulnerable packages from supply chain attacks and prov
 
 ### **Basic Commands**
 ```bash
-# Scan current directory (default)
+# Scan current directory (default - safe, non-destructive scan only)
 ./main_script.sh
 
 # Scan entire system
@@ -69,6 +73,8 @@ This tool scans for known vulnerable packages from supply chain attacks and prov
 # Scan directory without subdirectories
 ./main_script.sh --path /path --no-subdirs
 ```
+
+**Note**: All scan commands above are **safe and non-destructive** by default. They only report vulnerabilities found without making any changes to your system.
 
 ### **Purge Operations**
 ```bash
@@ -118,14 +124,15 @@ REPORT_FILE=my-report.json ./main_script.sh
 The script includes both TEST and PRODUCTION modes:
 
 **TEST Mode (Default - Safe)**
-- Uses safe test packages (lodash:4.17.21)
-- Perfect for testing and demonstrations
-- No risk of false positives
+- Uses safe test packages (lodash:4.17.21) - a legitimate, non-malicious package
+- Perfect for testing the scanner functionality and purge operations in a controlled environment
+- Allows you to verify that the scan and purge mechanisms work correctly without risk
+- No risk of false positives or accidental removal of real packages
 
 **PRODUCTION Mode**
 - Uses real vulnerable packages from supply chain attacks
 - 27 known vulnerable packages
-- For actual security scanning
+- For actual security scanning in production environments
 
 To switch modes, edit line 78 in the script:
 ```bash
@@ -135,6 +142,63 @@ SCAN_MODE="TEST"
 # For PRODUCTION:
 SCAN_MODE="PRODUCTION"
 ```
+
+## 🧪 Testing with White Package
+
+### **Installing the Test Package (lodash)**
+
+To test the scanner functionality safely, you can install the white package (lodash) that's used in TEST mode:
+
+#### **Option 1: Install in a Test Directory**
+```bash
+# Create a test directory
+mkdir test-scanner
+cd test-scanner
+
+# Initialize npm project
+npm init -y
+
+# Install the white package (lodash:4.17.21)
+npm install lodash@4.17.21
+
+# Test the scanner
+../main_script.sh
+```
+
+#### **Option 2: Install in Existing Project**
+```bash
+# In your existing project directory
+npm install lodash@4.17.21
+
+# Test the scanner (make sure SCAN_MODE="TEST" in the script)
+./main_script.sh
+```
+
+#### **Option 3: Test Purge Functionality**
+```bash
+# Install the test package
+npm install lodash@4.17.21
+
+# Test dry-run purge (safe preview)
+./main_script.sh --purge --dry-run
+
+# Test actual purge (removes lodash)
+./main_script.sh --purge --yes
+```
+
+### **Why Use lodash for Testing?**
+- **✅ Safe**: lodash is a legitimate, widely-used utility library
+- **✅ Non-malicious**: No security risks or malicious code
+- **✅ Controlled**: You can install/uninstall it safely
+- **✅ Realistic**: Tests the actual scan and purge mechanisms
+- **✅ Reversible**: Easy to reinstall if needed
+
+### **Testing Workflow**
+1. **Install lodash**: `npm install lodash@4.17.21`
+2. **Verify scan**: `./main_script.sh` (should detect lodash)
+3. **Test dry-run**: `./main_script.sh --purge --dry-run` (preview removal)
+4. **Test purge**: `./main_script.sh --purge --yes` (actual removal)
+5. **Reinstall if needed**: `npm install lodash@4.17.21`
 
 ## 🚨 Vulnerable Packages
 
@@ -173,10 +237,12 @@ SCAN_MODE="PRODUCTION"
 ## 🔒 Security Considerations
 
 ### **Safe Usage**
-1. **Always start with dry-run**: `./main_script.sh --purge --dry-run`
-2. **Use TEST mode for testing**: Set `SCAN_MODE="TEST"`
-3. **Backup important data** before purging
-4. **Review results** before confirming purge operations
+1. **Default is safe**: `./main_script.sh` (no flags) only scans and reports - no changes made
+2. **Always start with dry-run**: `./main_script.sh --purge --dry-run`
+3. **Use TEST mode for testing**: Set `SCAN_MODE="TEST"` to test with safe packages (lodash)
+4. **Test in controlled environment**: Install lodash to verify scan/purge functionality works
+5. **Backup important data** before purging in production
+6. **Review results** before confirming purge operations
 
 ### **Permissions**
 - **Read access** required for scanning
