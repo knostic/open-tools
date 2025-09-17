@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# DISCLAIMER OF LIABILITY
+# KNOSTIC PROVIDES THIS VULNERABLE PACKAGES SCANNER SCRIPT AS-IS FOR EDUCATIONAL AND SECURITY ASSESSMENT PURPOSES. BY DOWNLOADING, EXAMINING, OR EXECUTING THIS SCRIPT, YOU ACKNOWLEDGE AND AGREE THAT: (1) YOU HAVE THOROUGHLY REVIEWED THE SOURCE CODE AND UNDERSTAND ITS FUNCTIONALITY AND POTENTIAL RISKS; (2) YOU ARE SOLELY RESPONSIBLE FOR ANY CONSEQUENCES, DAMAGES, OR DATA LOSS THAT MAY RESULT FROM RUNNING THIS SCRIPT; (3) KNOSTIC DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT; (4) KNOSTIC SHALL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES ARISING FROM YOUR USE OF THIS SCRIPT, REGARDLESS OF THE LEGAL THEORY UNDER WHICH SUCH LIABILITY IS ASSERTED; AND (5) YOU ASSUME ALL RISKS ASSOCIATED WITH THE SCRIPT'S EXECUTION, INCLUDING BUT NOT LIMITED TO SYSTEM MODIFICATIONS, FILE DELETIONS, AND POTENTIAL SECURITY IMPLICATIONS. THIS SCRIPT IS PROVIDED "AS-IS" WITHOUT ANY GUARANTEE OF ACCURACY, COMPLETENESS, OR SAFETY. USE AT YOUR OWN RISK AND DISCRETION.
+
 # Unified Script to Check and Purge Vulnerable NPM Packages
 # 
 # COMPREHENSIVE SCANNING CAPABILITIES:
@@ -81,6 +84,465 @@ PRODUCTION_PACKAGES=(
     "prebid-universal-creative:latest"
     "prebid:latest"
     "proto-tinker-wc:0.1.87"
+    "@ahmedhfarag/ngx-perfect-scrollbar:20.0.20"
+    "@ahmedhfarag/ngx-virtual-scroller:4.0.4"
+    "@art-ws/common:2.0.28"
+    "@art-ws/config-eslint:2.0.4"
+    "@art-ws/config-eslint:2.0.5"
+    "@art-ws/config-ts:2.0.7"
+    "@art-ws/config-ts:2.0.8"
+    "@art-ws/db-context:2.0.24"
+    "@art-ws/di:2.0.28"
+    "@art-ws/di:2.0.32"
+    "@art-ws/di-node:2.0.13"
+    "@art-ws/eslint:1.0.5"
+    "@art-ws/eslint:1.0.6"
+    "@art-ws/fastify-http-server:2.0.24"
+    "@art-ws/fastify-http-server:2.0.27"
+    "@art-ws/http-server:2.0.21"
+    "@art-ws/http-server:2.0.25"
+    "@art-ws/openapi:0.1.9"
+    "@art-ws/openapi:0.1.12"
+    "@art-ws/package-base:1.0.5"
+    "@art-ws/package-base:1.0.6"
+    "@art-ws/prettier:1.0.5"
+    "@art-ws/prettier:1.0.6"
+    "@art-ws/slf:2.0.15"
+    "@art-ws/slf:2.0.22"
+    "@art-ws/ssl-info:1.0.9"
+    "@art-ws/ssl-info:1.0.10"
+    "@art-ws/web-app:1.0.3"
+    "@art-ws/web-app:1.0.4"
+    "@crowdstrike/commitlint:8.1.1"
+    "@crowdstrike/commitlint:8.1.2"
+    "@crowdstrike/falcon-shoelace:0.4.1"
+    "@crowdstrike/falcon-shoelace:0.4.2"
+    "@crowdstrike/foundry-js:0.19.1"
+    "@crowdstrike/foundry-js:0.19.2"
+    "@crowdstrike/glide-core:0.34.2"
+    "@crowdstrike/glide-core:0.34.3"
+    "@crowdstrike/logscale-dashboard:1.205.1"
+    "@crowdstrike/logscale-dashboard:1.205.2"
+    "@crowdstrike/logscale-file-editor:1.205.1"
+    "@crowdstrike/logscale-file-editor:1.205.2"
+    "@crowdstrike/logscale-parser-edit:1.205.1"
+    "@crowdstrike/logscale-parser-edit:1.205.2"
+    "@crowdstrike/logscale-search:1.205.1"
+    "@crowdstrike/logscale-search:1.205.2"
+    "@crowdstrike/tailwind-toucan-base:5.0.1"
+    "@crowdstrike/tailwind-toucan-base:5.0.2"
+    "@ctrl/deluge:7.2.1"
+    "@ctrl/deluge:7.2.2"
+    "@ctrl/golang-template:1.4.2"
+    "@ctrl/golang-template:1.4.3"
+    "@ctrl/magnet-link:4.0.3"
+    "@ctrl/magnet-link:4.0.4"
+    "@ctrl/ngx-codemirror:7.0.1"
+    "@ctrl/ngx-codemirror:7.0.2"
+    "@ctrl/ngx-csv:6.0.1"
+    "@ctrl/ngx-csv:6.0.2"
+    "@ctrl/ngx-emoji-mart:9.2.1"
+    "@ctrl/ngx-emoji-mart:9.2.2"
+    "@ctrl/ngx-rightclick:4.0.1"
+    "@ctrl/ngx-rightclick:4.0.2"
+    "@ctrl/qbittorrent:9.7.1"
+    "@ctrl/qbittorrent:9.7.2"
+    "@ctrl/react-adsense:2.0.1"
+    "@ctrl/react-adsense:2.0.2"
+    "@ctrl/shared-torrent:6.3.1"
+    "@ctrl/shared-torrent:6.3.2"
+    "@ctrl/tinycolor:4.1.1"
+    "@ctrl/tinycolor:4.1.2"
+    "@ctrl/torrent-file:4.1.1"
+    "@ctrl/torrent-file:4.1.2"
+    "@ctrl/transmission:7.3.1"
+    "@ctrl/ts-base32:4.0.1"
+    "@ctrl/ts-base32:4.0.2"
+    "@hestjs/core:0.2.1"
+    "@hestjs/cqrs:0.1.6"
+    "@hestjs/demo:0.1.2"
+    "@hestjs/eslint-config:0.1.2"
+    "@hestjs/logger:0.1.6"
+    "@hestjs/scalar:0.1.7"
+    "@hestjs/validation:0.1.6"
+    "@nativescript-community/arraybuffers:1.1.6"
+    "@nativescript-community/arraybuffers:1.1.7"
+    "@nativescript-community/arraybuffers:1.1.8"
+    "@nativescript-community/gesturehandler:2.0.35"
+    "@nativescript-community/perms:3.0.5"
+    "@nativescript-community/perms:3.0.6"
+    "@nativescript-community/perms:3.0.7"
+    "@nativescript-community/perms:3.0.8"
+    "@nativescript-community/sentry:4.6.43"
+    "@nativescript-community/sqlite:3.5.2"
+    "@nativescript-community/sqlite:3.5.3"
+    "@nativescript-community/sqlite:3.5.4"
+    "@nativescript-community/sqlite:3.5.5"
+    "@nativescript-community/text:1.6.9"
+    "@nativescript-community/text:1.6.10"
+    "@nativescript-community/text:1.6.11"
+    "@nativescript-community/text:1.6.12"
+    "@nativescript-community/text:1.6.13"
+    "@nativescript-community/typeorm:0.2.30"
+    "@nativescript-community/typeorm:0.2.31"
+    "@nativescript-community/typeorm:0.2.32"
+    "@nativescript-community/typeorm:0.2.33"
+    "@nativescript-community/ui-collectionview:6.0.6"
+    "@nativescript-community/ui-document-picker:1.1.27"
+    "@nativescript-community/ui-document-picker:1.1.28"
+    "@nativescript-community/ui-drawer:0.1.30"
+    "@nativescript-community/ui-image:4.5.6"
+    "@nativescript-community/ui-label:1.3.35"
+    "@nativescript-community/ui-label:1.3.36"
+    "@nativescript-community/ui-label:1.3.37"
+    "@nativescript-community/ui-material-bottom-navigation:7.2.72"
+    "@nativescript-community/ui-material-bottom-navigation:7.2.73"
+    "@nativescript-community/ui-material-bottom-navigation:7.2.74"
+    "@nativescript-community/ui-material-bottom-navigation:7.2.75"
+    "@nativescript-community/ui-material-bottomsheet:7.2.72"
+    "@nativescript-community/ui-material-core:7.2.72"
+    "@nativescript-community/ui-material-core:7.2.73"
+    "@nativescript-community/ui-material-core:7.2.74"
+    "@nativescript-community/ui-material-core:7.2.75"
+    "@nativescript-community/ui-material-core:7.2.76"
+    "@nativescript-community/ui-material-core-tabs:7.2.72"
+    "@nativescript-community/ui-material-core-tabs:7.2.73"
+    "@nativescript-community/ui-material-core-tabs:7.2.74"
+    "@nativescript-community/ui-material-core-tabs:7.2.75"
+    "@nativescript-community/ui-material-core-tabs:7.2.76"
+    "@nativescript-community/ui-material-ripple:7.2.72"
+    "@nativescript-community/ui-material-ripple:7.2.73"
+    "@nativescript-community/ui-material-ripple:7.2.74"
+    "@nativescript-community/ui-material-ripple:7.2.75"
+    "@nativescript-community/ui-material-tabs:7.2.72"
+    "@nativescript-community/ui-material-tabs:7.2.73"
+    "@nativescript-community/ui-material-tabs:7.2.74"
+    "@nativescript-community/ui-material-tabs:7.2.75"
+    "@nativescript-community/ui-pager:14.1.36"
+    "@nativescript-community/ui-pager:14.1.37"
+    "@nativescript-community/ui-pager:14.1.38"
+    "@nativescript-community/ui-pulltorefresh:2.5.4"
+    "@nativescript-community/ui-pulltorefresh:2.5.5"
+    "@nativescript-community/ui-pulltorefresh:2.5.6"
+    "@nativescript-community/ui-pulltorefresh:2.5.7"
+    "@nexe/config-manager:0.1.1"
+    "@nexe/eslint-config:0.1.1"
+    "@nexe/logger:0.1.3"
+    "@nstudio/angular:20.0.4"
+    "@nstudio/angular:20.0.5"
+    "@nstudio/angular:20.0.6"
+    "@nstudio/focus:20.0.4"
+    "@nstudio/focus:20.0.5"
+    "@nstudio/focus:20.0.6"
+    "@nstudio/nativescript-checkbox:2.0.6"
+    "@nstudio/nativescript-checkbox:2.0.7"
+    "@nstudio/nativescript-checkbox:2.0.8"
+    "@nstudio/nativescript-checkbox:2.0.9"
+    "@nstudio/nativescript-loading-indicator:5.0.1"
+    "@nstudio/nativescript-loading-indicator:5.0.2"
+    "@nstudio/nativescript-loading-indicator:5.0.3"
+    "@nstudio/nativescript-loading-indicator:5.0.4"
+    "@nstudio/ui-collectionview:5.1.11"
+    "@nstudio/ui-collectionview:5.1.12"
+    "@nstudio/ui-collectionview:5.1.13"
+    "@nstudio/ui-collectionview:5.1.14"
+    "@nstudio/web:20.0.4"
+    "@nstudio/web-angular:20.0.4"
+    "@nstudio/xplat:20.0.5"
+    "@nstudio/xplat:20.0.6"
+    "@nstudio/xplat:20.0.7"
+    "@nstudio/xplat-utils:20.0.5"
+    "@nstudio/xplat-utils:20.0.6"
+    "@nstudio/xplat-utils:20.0.7"
+    "@operato/board:9.0.36"
+    "@operato/board:9.0.37"
+    "@operato/board:9.0.38"
+    "@operato/board:9.0.39"
+    "@operato/board:9.0.40"
+    "@operato/board:9.0.41"
+    "@operato/board:9.0.42"
+    "@operato/board:9.0.43"
+    "@operato/board:9.0.44"
+    "@operato/board:9.0.45"
+    "@operato/board:9.0.46"
+    "@operato/data-grist:9.0.29"
+    "@operato/data-grist:9.0.35"
+    "@operato/data-grist:9.0.36"
+    "@operato/data-grist:9.0.37"
+    "@operato/graphql:9.0.22"
+    "@operato/graphql:9.0.35"
+    "@operato/graphql:9.0.36"
+    "@operato/graphql:9.0.37"
+    "@operato/graphql:9.0.38"
+    "@operato/graphql:9.0.39"
+    "@operato/graphql:9.0.40"
+    "@operato/graphql:9.0.41"
+    "@operato/graphql:9.0.42"
+    "@operato/graphql:9.0.43"
+    "@operato/graphql:9.0.44"
+    "@operato/graphql:9.0.45"
+    "@operato/graphql:9.0.46"
+    "@operato/headroom:9.0.2"
+    "@operato/headroom:9.0.35"
+    "@operato/headroom:9.0.36"
+    "@operato/headroom:9.0.37"
+    "@operato/help:9.0.35"
+    "@operato/help:9.0.36"
+    "@operato/help:9.0.37"
+    "@operato/help:9.0.38"
+    "@operato/help:9.0.39"
+    "@operato/help:9.0.40"
+    "@operato/help:9.0.41"
+    "@operato/help:9.0.42"
+    "@operato/help:9.0.43"
+    "@operato/help:9.0.44"
+    "@operato/help:9.0.45"
+    "@operato/help:9.0.46"
+    "@operato/i18n:9.0.35"
+    "@operato/i18n:9.0.36"
+    "@operato/i18n:9.0.37"
+    "@operato/input:9.0.27"
+    "@operato/input:9.0.35"
+    "@operato/input:9.0.36"
+    "@operato/input:9.0.37"
+    "@operato/input:9.0.38"
+    "@operato/input:9.0.39"
+    "@operato/input:9.0.40"
+    "@operato/input:9.0.41"
+    "@operato/input:9.0.42"
+    "@operato/input:9.0.43"
+    "@operato/input:9.0.44"
+    "@operato/input:9.0.45"
+    "@operato/input:9.0.46"
+    "@operato/layout:9.0.35"
+    "@operato/layout:9.0.36"
+    "@operato/layout:9.0.37"
+    "@operato/popup:9.0.22"
+    "@operato/popup:9.0.35"
+    "@operato/popup:9.0.36"
+    "@operato/popup:9.0.37"
+    "@operato/popup:9.0.38"
+    "@operato/popup:9.0.39"
+    "@operato/popup:9.0.40"
+    "@operato/popup:9.0.41"
+    "@operato/popup:9.0.42"
+    "@operato/popup:9.0.43"
+    "@operato/popup:9.0.44"
+    "@operato/popup:9.0.45"
+    "@operato/popup:9.0.46"
+    "@operato/pull-to-refresh:9.0.36"
+    "@operato/pull-to-refresh:9.0.37"
+    "@operato/pull-to-refresh:9.0.38"
+    "@operato/pull-to-refresh:9.0.39"
+    "@operato/pull-to-refresh:9.0.40"
+    "@operato/pull-to-refresh:9.0.41"
+    "@operato/pull-to-refresh:9.0.42"
+    "@operato/shell:9.0.22"
+    "@operato/shell:9.0.35"
+    "@operato/shell:9.0.36"
+    "@operato/shell:9.0.37"
+    "@operato/shell:9.0.38"
+    "@operato/shell:9.0.39"
+    "@operato/styles:9.0.2"
+    "@operato/styles:9.0.35"
+    "@operato/styles:9.0.36"
+    "@operato/styles:9.0.37"
+    "@operato/utils:9.0.22"
+    "@operato/utils:9.0.35"
+    "@operato/utils:9.0.36"
+    "@operato/utils:9.0.37"
+    "@operato/utils:9.0.38"
+    "@operato/utils:9.0.39"
+    "@operato/utils:9.0.40"
+    "@operato/utils:9.0.41"
+    "@operato/utils:9.0.42"
+    "@operato/utils:9.0.43"
+    "@operato/utils:9.0.44"
+    "@operato/utils:9.0.45"
+    "@operato/utils:9.0.46"
+    "@teselagen/bounce-loader:0.3.16"
+    "@teselagen/bounce-loader:0.3.17"
+    "@teselagen/liquibase-tools:0.4.1"
+    "@teselagen/range-utils:0.3.14"
+    "@teselagen/range-utils:0.3.15"
+    "@teselagen/react-list:0.8.19"
+    "@teselagen/react-list:0.8.20"
+    "@teselagen/react-table:6.10.19"
+    "@thangved/callback-window:1.1.4"
+    "@things-factory/attachment-base:9.0.43"
+    "@things-factory/attachment-base:9.0.44"
+    "@things-factory/attachment-base:9.0.45"
+    "@things-factory/attachment-base:9.0.46"
+    "@things-factory/attachment-base:9.0.47"
+    "@things-factory/attachment-base:9.0.48"
+    "@things-factory/attachment-base:9.0.49"
+    "@things-factory/attachment-base:9.0.50"
+    "@things-factory/auth-base:9.0.43"
+    "@things-factory/auth-base:9.0.44"
+    "@things-factory/auth-base:9.0.45"
+    "@things-factory/email-base:9.0.42"
+    "@things-factory/email-base:9.0.43"
+    "@things-factory/email-base:9.0.44"
+    "@things-factory/email-base:9.0.45"
+    "@things-factory/email-base:9.0.46"
+    "@things-factory/email-base:9.0.47"
+    "@things-factory/email-base:9.0.48"
+    "@things-factory/email-base:9.0.49"
+    "@things-factory/email-base:9.0.50"
+    "@things-factory/email-base:9.0.51"
+    "@things-factory/email-base:9.0.52"
+    "@things-factory/email-base:9.0.53"
+    "@things-factory/email-base:9.0.54"
+    "@things-factory/env:9.0.42"
+    "@things-factory/env:9.0.43"
+    "@things-factory/env:9.0.44"
+    "@things-factory/env:9.0.45"
+    "@things-factory/integration-base:9.0.43"
+    "@things-factory/integration-base:9.0.44"
+    "@things-factory/integration-base:9.0.45"
+    "@things-factory/integration-marketplace:9.0.43"
+    "@things-factory/integration-marketplace:9.0.44"
+    "@things-factory/integration-marketplace:9.0.45"
+    "@things-factory/shell:9.0.43"
+    "@things-factory/shell:9.0.44"
+    "@things-factory/shell:9.0.45"
+    "@tnf-dev/api:1.0.8"
+    "@tnf-dev/core:1.0.8"
+    "@tnf-dev/js:1.0.8"
+    "@tnf-dev/mui:1.0.8"
+    "@tnf-dev/react:1.0.8"
+    "@ui-ux-gang/devextreme-angular-rpk:24.1.7"
+    "@yoobic/design-system:6.5.17"
+    "@yoobic/jpeg-camera-es6:1.0.13"
+    "@yoobic/yobi:8.7.53"
+    "airchief:0.3.1"
+    "airpilot:0.8.8"
+    "angulartics2:14.1.1"
+    "angulartics2:14.1.2"
+    "browser-webdriver-downloader:3.0.8"
+    "capacitor-notificationhandler:0.0.2"
+    "capacitor-notificationhandler:0.0.3"
+    "capacitor-plugin-healthapp:0.0.2"
+    "capacitor-plugin-healthapp:0.0.3"
+    "capacitor-plugin-ihealth:1.1.8"
+    "capacitor-plugin-ihealth:1.1.9"
+    "capacitor-plugin-vonage:1.0.2"
+    "capacitor-plugin-vonage:1.0.3"
+    "capacitorandroidpermissions:0.0.4"
+    "capacitorandroidpermissions:0.0.5"
+    "config-cordova:0.8.5"
+    "cordova-plugin-voxeet2:1.0.24"
+    "cordova-voxeet:1.0.32"
+    "create-hest-app:0.1.9"
+    "db-evo:1.1.4"
+    "db-evo:1.1.5"
+    "devextreme-angular-rpk:21.2.8"
+    "ember-browser-services:5.0.2"
+    "ember-browser-services:5.0.3"
+    "ember-headless-form:1.1.2"
+    "ember-headless-form:1.1.3"
+    "ember-headless-form-yup:1.0.1"
+    "ember-headless-table:2.1.5"
+    "ember-headless-table:2.1.6"
+    "ember-url-hash-polyfill:1.0.12"
+    "ember-url-hash-polyfill:1.0.13"
+    "ember-velcro:2.2.1"
+    "ember-velcro:2.2.2"
+    "encounter-playground:0.0.2"
+    "encounter-playground:0.0.3"
+    "encounter-playground:0.0.4"
+    "encounter-playground:0.0.5"
+    "eslint-config-crowdstrike:11.0.2"
+    "eslint-config-crowdstrike:11.0.3"
+    "eslint-config-crowdstrike-node:4.0.3"
+    "eslint-config-crowdstrike-node:4.0.4"
+    "eslint-config-teselagen:6.1.7"
+    "globalize-rpk:1.7.4"
+    "graphql-sequelize-teselagen:5.3.8"
+    "html-to-base64-image:1.0.2"
+    "json-rules-engine-simplified:0.2.1"
+    "json-rules-engine-simplified:0.2.4"
+    "jumpgate:0.0.2"
+    "koa2-swagger-ui:5.11.1"
+    "koa2-swagger-ui:5.11.2"
+    "mcfly-semantic-release:1.3.1"
+    "mcp-knowledge-base:0.0.2"
+    "mcp-knowledge-graph:1.2.1"
+    "mobioffice-cli:1.0.3"
+    "monorepo-next:13.0.1"
+    "monorepo-next:13.0.2"
+    "mstate-angular:0.4.4"
+    "mstate-cli:0.4.7"
+    "mstate-dev-react:1.1.1"
+    "mstate-react:1.6.5"
+    "ng2-file-upload:7.0.2"
+    "ng2-file-upload:7.0.3"
+    "ng2-file-upload:8.0.1"
+    "ng2-file-upload:8.0.2"
+    "ng2-file-upload:8.0.3"
+    "ng2-file-upload:9.0.1"
+    "ngx-bootstrap:18.1.4"
+    "ngx-bootstrap:19.0.3"
+    "ngx-bootstrap:19.0.4"
+    "ngx-bootstrap:20.0.3"
+    "ngx-bootstrap:20.0.4"
+    "ngx-bootstrap:20.0.5"
+    "ngx-color:10.0.1"
+    "ngx-color:10.0.2"
+    "ngx-toastr:19.0.1"
+    "ngx-toastr:19.0.2"
+    "ngx-trend:8.0.1"
+    "ngx-ws:1.1.5"
+    "ngx-ws:1.1.6"
+    "oradm-to-gql:35.0.14"
+    "oradm-to-gql:35.0.15"
+    "oradm-to-sqlz:1.1.2"
+    "ove-auto-annotate:0.0.9"
+    "pm2-gelf-json:1.0.4"
+    "pm2-gelf-json:1.0.5"
+    "printjs-rpk:1.6.1"
+    "react-complaint-image:0.0.32"
+    "react-complaint-image:0.0.35"
+    "react-jsonschema-form-conditionals:0.3.18"
+    "react-jsonschema-form-conditionals:0.3.21"
+    "react-jsonschema-form-extras:1.0.4"
+    "remark-preset-lint-crowdstrike:4.0.1"
+    "remark-preset-lint-crowdstrike:4.0.2"
+    "rxnt-authentication:0.0.3"
+    "rxnt-authentication:0.0.4"
+    "rxnt-authentication:0.0.5"
+    "rxnt-authentication:0.0.6"
+    "rxnt-healthchecks-nestjs:1.0.2"
+    "rxnt-healthchecks-nestjs:1.0.3"
+    "rxnt-healthchecks-nestjs:1.0.4"
+    "rxnt-healthchecks-nestjs:1.0.5"
+    "rxnt-kue:1.0.4"
+    "rxnt-kue:1.0.5"
+    "rxnt-kue:1.0.6"
+    "rxnt-kue:1.0.7"
+    "swc-plugin-component-annotate:1.9.1"
+    "swc-plugin-component-annotate:1.9.2"
+    "tbssnch:1.0.2"
+    "teselagen-interval-tree:1.1.2"
+    "tg-client-query-builder:2.14.4"
+    "tg-client-query-builder:2.14.5"
+    "tg-redbird:1.3.1"
+    "tg-seq-gen:1.0.9"
+    "tg-seq-gen:1.0.10"
+    "thangved-react-grid:1.0.3"
+    "ts-gaussian:3.0.5"
+    "ts-gaussian:3.0.6"
+    "ts-imports:1.0.1"
+    "ts-imports:1.0.2"
+    "tvi-cli:0.1.5"
+    "ve-bamreader:0.2.6"
+    "ve-editor:1.0.1"
+    "verror-extra:6.0.1"
+    "voip-callkit:1.0.2"
+    "voip-callkit:1.0.3"
+    "wdio-web-reporter:0.1.3"
+    "yargs-help-output:5.0.3"
+    "yoo-styles:6.0.326"
 )
 
 # TEST PACKAGES - Safe dummy packages for testing
@@ -861,22 +1323,47 @@ check_node_modules() {
     
     echo -e "${BLUE}  📦 Checking node_modules in: $repo_path${NC}"
     
+    # Create a temporary file to store vulnerable package names for efficient lookup
+    local temp_file
+    temp_file=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+    trap 'rm -f "$temp_file"' EXIT
+    
+    # Build a list of vulnerable package names for efficient filtering
     for package_version in "${VULNERABLE_PACKAGES[@]}"; do
         local package="${package_version%:*}"
-        local vulnerable_version="${package_version#*:}"
-        
-        # Find all package.json files in node_modules for this package
-        while IFS= read -r -d '' package_json; do
-            if [ -f "$package_json" ]; then
-                local version=$(grep '"version"' "$package_json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-                if [ "$version" = "$vulnerable_version" ]; then
-                    echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_json${NC}"
-                    found_vulnerable=true
-                    VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
-                fi
-            fi
-        done < <(find "$repo_path" -path "*/node_modules/$package/package.json" -print0 2>/dev/null)
+        echo "$package" >> "$temp_file"
     done
+    
+    # Use a single find command to get all package.json files in node_modules
+    # Then filter and check versions efficiently
+    while IFS= read -r -d '' package_json; do
+        if [ -f "$package_json" ]; then
+            # Extract package name from path (e.g., /path/node_modules/package-name/package.json -> package-name)
+            local package_name=$(basename "$(dirname "$package_json")")
+            
+            # Check if this package is in our vulnerable list
+            if grep -q "^$package_name$" "$temp_file" 2>/dev/null; then
+                local version=$(grep '"version"' "$package_json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+                
+                # Check if this specific version is vulnerable
+                for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+                    local package="${package_version%:*}"
+                    local vulnerable_version="${package_version#*:}"
+                    
+                    if [ "$package" = "$package_name" ] && [ "$version" = "$vulnerable_version" ]; then
+                        echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_json${NC}"
+                        found_vulnerable=true
+                        VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
+                        break  # Found a match, no need to check other versions of this package
+                    fi
+                done
+            fi
+        fi
+    done < <(find "$repo_path" -path "*/node_modules/*/package.json" -print0 2>/dev/null)
+    
+    # Clean up
+    rm -f "$temp_file"
+    trap - EXIT
     
     if [ "$found_vulnerable" = false ]; then
         echo -e "${GREEN}    ✅ No vulnerable packages found in node_modules${NC}"
@@ -1153,40 +1640,65 @@ purge_node_modules() {
     
     echo -e "${BLUE}  🧹 Purging node_modules in: $repo_path${NC}"
     
+    # Create a temporary file to store vulnerable package names for efficient lookup
+    local temp_file
+    temp_file=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+    trap 'rm -f "$temp_file"' EXIT
+    
+    # Build a list of vulnerable package names for efficient filtering
     for package_version in "${VULNERABLE_PACKAGES[@]}"; do
         local package="${package_version%:*}"
-        local vulnerable_version="${package_version#*:}"
-        
-        # Find and remove vulnerable package directories
-        while IFS= read -r -d '' package_dir; do
-            if [ -d "$package_dir" ]; then
-                # Check if it's the vulnerable version
+        echo "$package" >> "$temp_file"
+    done
+    
+    # Use a single find command to get all package directories in node_modules
+    # Then filter and check versions efficiently
+    while IFS= read -r -d '' package_dir; do
+        if [ -d "$package_dir" ]; then
+            # Extract package name from path (e.g., /path/node_modules/package-name -> package-name)
+            local package_name=$(basename "$package_dir")
+            
+            # Check if this package is in our vulnerable list
+            if grep -q "^$package_name$" "$temp_file" 2>/dev/null; then
+                # Check if it's a vulnerable version
                 if [ -f "$package_dir/package.json" ]; then
                     local version=$(grep '"version"' "$package_dir/package.json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-                    if [ "$version" = "$vulnerable_version" ]; then
-                        if [ "$DRY_RUN" = "true" ]; then
-                            echo -e "${YELLOW}    🔍 [DRY-RUN] Would remove: $package@$vulnerable_version from $package_dir${NC}"
-                        else
-                            echo -e "${YELLOW}    🗑️  Removing: $package@$vulnerable_version from $package_dir${NC}"
-                        fi
-                        # Validate path before deletion for security
-                        if [[ "$package_dir" == *"/node_modules/"* ]] && [[ "$package_dir" == *"/$package" ]]; then
-                            if [ "$DRY_RUN" = "false" ]; then
-                                # Use safer deletion - only remove the specific package directory
-                                if [ -d "$package_dir" ]; then
-                                    rm -r "$package_dir" 2>/dev/null || echo -e "${YELLOW}    ⚠️  Could not remove $package_dir${NC}"
-                                fi
+                    
+                    # Check if this specific version is vulnerable
+                    for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+                        local package="${package_version%:*}"
+                        local vulnerable_version="${package_version#*:}"
+                        
+                        if [ "$package" = "$package_name" ] && [ "$version" = "$vulnerable_version" ]; then
+                            if [ "$DRY_RUN" = "true" ]; then
+                                echo -e "${YELLOW}    🔍 [DRY-RUN] Would remove: $package@$vulnerable_version from $package_dir${NC}"
+                            else
+                                echo -e "${YELLOW}    🗑️  Removing: $package@$vulnerable_version from $package_dir${NC}"
                             fi
-                            purged_count=$((purged_count + 1))
-                            PACKAGES_PURGED=$((PACKAGES_PURGED + 1))
-                        else
-                            echo -e "${RED}    ⚠️  Skipping suspicious path: $package_dir${NC}"
+                            # Validate path before deletion for security
+                            if [[ "$package_dir" == *"/node_modules/"* ]] && [[ "$package_dir" == *"/$package" ]]; then
+                                if [ "$DRY_RUN" = "false" ]; then
+                                    # Use safer deletion - only remove the specific package directory
+                                    if [ -d "$package_dir" ]; then
+                                        rm -r "$package_dir" 2>/dev/null || echo -e "${YELLOW}    ⚠️  Could not remove $package_dir${NC}"
+                                    fi
+                                fi
+                                purged_count=$((purged_count + 1))
+                                PACKAGES_PURGED=$((PACKAGES_PURGED + 1))
+                            else
+                                echo -e "${RED}    ⚠️  Skipping suspicious path: $package_dir${NC}"
+                            fi
+                            break  # Found a match, no need to check other versions of this package
                         fi
-                    fi
+                    done
                 fi
             fi
-        done < <(find "$repo_path" -path "*/node_modules/$package" -type d -L -print0 2>/dev/null)
-    done
+        fi
+    done < <(find "$repo_path" -path "*/node_modules/*" -type d -maxdepth 1 -print0 2>/dev/null)
+    
+    # Clean up
+    rm -f "$temp_file"
+    trap - EXIT
     
     if [ "$purged_count" -eq 0 ]; then
         echo -e "${GREEN}    ✅ No vulnerable packages found in node_modules${NC}"
@@ -1350,27 +1862,53 @@ check_system_npm_locations() {
     
     echo -e "${BLUE}  📦 Detected package managers: ${package_managers[*]}${NC}"
     
+    # Create a temporary file to store vulnerable package names for efficient lookup
+    local temp_file
+    temp_file=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+    trap 'rm -f "$temp_file"' EXIT
+    
+    # Build a list of vulnerable package names for efficient filtering
+    for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+        local package="${package_version%:*}"
+        echo "$package" >> "$temp_file"
+    done
+    
     for location in "${npm_locations[@]}"; do
         if [ -d "$location" ] || ls "$location" 2>/dev/null | grep -q .; then
             echo -e "${YELLOW}  📁 Checking: $location${NC}"
             
-            for package_version in "${VULNERABLE_PACKAGES[@]}"; do
-                local package="${package_version%:*}"
-                local vulnerable_version="${package_version#*:}"
-                
-                while IFS= read -r -d '' package_dir; do
-                    if [ -f "$package_dir/package.json" ]; then
+            # Use a single find command to get all package directories in this location
+            # Then filter and check versions efficiently
+            while IFS= read -r -d '' package_dir; do
+                if [ -d "$package_dir" ] && [ -f "$package_dir/package.json" ]; then
+                    # Extract package name from path (e.g., /path/location/package-name -> package-name)
+                    local package_name=$(basename "$package_dir")
+                    
+                    # Check if this package is in our vulnerable list
+                    if grep -q "^$package_name$" "$temp_file" 2>/dev/null; then
                         local installed_version=$(grep '"version"' "$package_dir/package.json" 2>/dev/null | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-                        if [ "$installed_version" = "$vulnerable_version" ]; then
-                            echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_dir${NC}"
-                            found_vulnerable_in_system=true
-                            VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
-                        fi
+                        
+                        # Check if this specific version is vulnerable
+                        for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+                            local package="${package_version%:*}"
+                            local vulnerable_version="${package_version#*:}"
+                            
+                            if [ "$package" = "$package_name" ] && [ "$installed_version" = "$vulnerable_version" ]; then
+                                echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_dir${NC}"
+                                found_vulnerable_in_system=true
+                                VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
+                                break  # Found a match, no need to check other versions of this package
+                            fi
+                        done
                     fi
-                done < <(find "$location" -name "$package" -type d -L -print0 2>/dev/null)
-            done
+                fi
+            done < <(find "$location" -type d -maxdepth 1 -print0 2>/dev/null)
         fi
     done
+    
+    # Clean up
+    rm -f "$temp_file"
+    trap - EXIT
     
     # Check for multiple Node.js versions and their global packages
     if command -v nvm >/dev/null 2>&1; then
