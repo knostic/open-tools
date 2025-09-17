@@ -1,6 +1,9 @@
 # 🔒 Vulnerable Packages Scanner
 
-A simple standalone bash script we developed for our own use at [knostic.ai](https://www.knostic.ai/), to detect and purge vulnerable npm packages across the entire system, or specific directories. This tool addresses the [debug package vulnerability as described by Snyk.](https://security.snyk.io/vuln/SNYK-JS-DEBUG-12552895) 
+A simple standalone bash script we developed for our own use at [knostic.ai](https://www.knostic.ai/), to detect and purge vulnerable npm packages across the entire system, or specific directories. 
+This tool addresses the [debug package vulnerability as described by Snyk.](https://security.snyk.io/vuln/SNYK-JS-DEBUG-12552895) 
+New additions are from [Aikido: S1ngularity/nx attackers strike again](https://www.aikido.dev/blog/s1ngularity-nx-attackers-strike-again)]
+And from [socket: Popular Tinycolor npm Package Compromised in Supply Chain Attack Affecting 40+ Packages](https://socket.dev/blog/tinycolor-supply-chain-attack-affects-40-packages)
 
 ## 🚀 Quick Start
 
