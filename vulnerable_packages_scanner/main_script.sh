@@ -1859,27 +1859,53 @@ check_system_npm_locations() {
     
     echo -e "${BLUE}  📦 Detected package managers: ${package_managers[*]}${NC}"
     
+    # Create a temporary file to store vulnerable package names for efficient lookup
+    local temp_file
+    temp_file=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+    trap 'rm -f "$temp_file"' EXIT
+    
+    # Build a list of vulnerable package names for efficient filtering
+    for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+        local package="${package_version%:*}"
+        echo "$package" >> "$temp_file"
+    done
+    
     for location in "${npm_locations[@]}"; do
         if [ -d "$location" ] || ls "$location" 2>/dev/null | grep -q .; then
             echo -e "${YELLOW}  📁 Checking: $location${NC}"
             
-            for package_version in "${VULNERABLE_PACKAGES[@]}"; do
-                local package="${package_version%:*}"
-                local vulnerable_version="${package_version#*:}"
-                
-                while IFS= read -r -d '' package_dir; do
-                    if [ -f "$package_dir/package.json" ]; then
+            # Use a single find command to get all package directories in this location
+            # Then filter and check versions efficiently
+            while IFS= read -r -d '' package_dir; do
+                if [ -d "$package_dir" ] && [ -f "$package_dir/package.json" ]; then
+                    # Extract package name from path (e.g., /path/location/package-name -> package-name)
+                    local package_name=$(basename "$package_dir")
+                    
+                    # Check if this package is in our vulnerable list
+                    if grep -q "^$package_name$" "$temp_file" 2>/dev/null; then
                         local installed_version=$(grep '"version"' "$package_dir/package.json" 2>/dev/null | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-                        if [ "$installed_version" = "$vulnerable_version" ]; then
-                            echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_dir${NC}"
-                            found_vulnerable_in_system=true
-                            VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
-                        fi
+                        
+                        # Check if this specific version is vulnerable
+                        for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+                            local package="${package_version%:*}"
+                            local vulnerable_version="${package_version#*:}"
+                            
+                            if [ "$package" = "$package_name" ] && [ "$installed_version" = "$vulnerable_version" ]; then
+                                echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_dir${NC}"
+                                found_vulnerable_in_system=true
+                                VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
+                                break  # Found a match, no need to check other versions of this package
+                            fi
+                        done
                     fi
-                done < <(find "$location" -name "$package" -type d -L -print0 2>/dev/null)
-            done
+                fi
+            done < <(find "$location" -type d -maxdepth 1 -print0 2>/dev/null)
         fi
     done
+    
+    # Clean up
+    rm -f "$temp_file"
+    trap - EXIT
     
     # Check for multiple Node.js versions and their global packages
     if command -v nvm >/dev/null 2>&1; then
