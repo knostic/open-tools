@@ -1320,22 +1320,47 @@ check_node_modules() {
     
     echo -e "${BLUE}  📦 Checking node_modules in: $repo_path${NC}"
     
+    # Create a temporary file to store vulnerable package names for efficient lookup
+    local temp_file
+    temp_file=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+    trap 'rm -f "$temp_file"' EXIT
+    
+    # Build a list of vulnerable package names for efficient filtering
     for package_version in "${VULNERABLE_PACKAGES[@]}"; do
         local package="${package_version%:*}"
-        local vulnerable_version="${package_version#*:}"
-        
-        # Find all package.json files in node_modules for this package
-        while IFS= read -r -d '' package_json; do
-            if [ -f "$package_json" ]; then
-                local version=$(grep '"version"' "$package_json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-                if [ "$version" = "$vulnerable_version" ]; then
-                    echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_json${NC}"
-                    found_vulnerable=true
-                    VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
-                fi
-            fi
-        done < <(find "$repo_path" -path "*/node_modules/$package/package.json" -print0 2>/dev/null)
+        echo "$package" >> "$temp_file"
     done
+    
+    # Use a single find command to get all package.json files in node_modules
+    # Then filter and check versions efficiently
+    while IFS= read -r -d '' package_json; do
+        if [ -f "$package_json" ]; then
+            # Extract package name from path (e.g., /path/node_modules/package-name/package.json -> package-name)
+            local package_name=$(basename "$(dirname "$package_json")")
+            
+            # Check if this package is in our vulnerable list
+            if grep -q "^$package_name$" "$temp_file" 2>/dev/null; then
+                local version=$(grep '"version"' "$package_json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
+                
+                # Check if this specific version is vulnerable
+                for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+                    local package="${package_version%:*}"
+                    local vulnerable_version="${package_version#*:}"
+                    
+                    if [ "$package" = "$package_name" ] && [ "$version" = "$vulnerable_version" ]; then
+                        echo -e "${RED}    ❌ VULNERABLE: $package@$vulnerable_version found in $package_json${NC}"
+                        found_vulnerable=true
+                        VULNERABILITIES_FOUND=$((VULNERABILITIES_FOUND + 1))
+                        break  # Found a match, no need to check other versions of this package
+                    fi
+                done
+            fi
+        fi
+    done < <(find "$repo_path" -path "*/node_modules/*/package.json" -print0 2>/dev/null)
+    
+    # Clean up
+    rm -f "$temp_file"
+    trap - EXIT
     
     if [ "$found_vulnerable" = false ]; then
         echo -e "${GREEN}    ✅ No vulnerable packages found in node_modules${NC}"
@@ -1612,40 +1637,65 @@ purge_node_modules() {
     
     echo -e "${BLUE}  🧹 Purging node_modules in: $repo_path${NC}"
     
+    # Create a temporary file to store vulnerable package names for efficient lookup
+    local temp_file
+    temp_file=$(mktemp) || { echo "Failed to create temp file"; return 1; }
+    trap 'rm -f "$temp_file"' EXIT
+    
+    # Build a list of vulnerable package names for efficient filtering
     for package_version in "${VULNERABLE_PACKAGES[@]}"; do
         local package="${package_version%:*}"
-        local vulnerable_version="${package_version#*:}"
-        
-        # Find and remove vulnerable package directories
-        while IFS= read -r -d '' package_dir; do
-            if [ -d "$package_dir" ]; then
-                # Check if it's the vulnerable version
+        echo "$package" >> "$temp_file"
+    done
+    
+    # Use a single find command to get all package directories in node_modules
+    # Then filter and check versions efficiently
+    while IFS= read -r -d '' package_dir; do
+        if [ -d "$package_dir" ]; then
+            # Extract package name from path (e.g., /path/node_modules/package-name -> package-name)
+            local package_name=$(basename "$package_dir")
+            
+            # Check if this package is in our vulnerable list
+            if grep -q "^$package_name$" "$temp_file" 2>/dev/null; then
+                # Check if it's a vulnerable version
                 if [ -f "$package_dir/package.json" ]; then
                     local version=$(grep '"version"' "$package_dir/package.json" | head -1 | sed 's/.*"version": *"\([^"]*\)".*/\1/')
-                    if [ "$version" = "$vulnerable_version" ]; then
-                        if [ "$DRY_RUN" = "true" ]; then
-                            echo -e "${YELLOW}    🔍 [DRY-RUN] Would remove: $package@$vulnerable_version from $package_dir${NC}"
-                        else
-                            echo -e "${YELLOW}    🗑️  Removing: $package@$vulnerable_version from $package_dir${NC}"
-                        fi
-                        # Validate path before deletion for security
-                        if [[ "$package_dir" == *"/node_modules/"* ]] && [[ "$package_dir" == *"/$package" ]]; then
-                            if [ "$DRY_RUN" = "false" ]; then
-                                # Use safer deletion - only remove the specific package directory
-                                if [ -d "$package_dir" ]; then
-                                    rm -r "$package_dir" 2>/dev/null || echo -e "${YELLOW}    ⚠️  Could not remove $package_dir${NC}"
-                                fi
+                    
+                    # Check if this specific version is vulnerable
+                    for package_version in "${VULNERABLE_PACKAGES[@]}"; do
+                        local package="${package_version%:*}"
+                        local vulnerable_version="${package_version#*:}"
+                        
+                        if [ "$package" = "$package_name" ] && [ "$version" = "$vulnerable_version" ]; then
+                            if [ "$DRY_RUN" = "true" ]; then
+                                echo -e "${YELLOW}    🔍 [DRY-RUN] Would remove: $package@$vulnerable_version from $package_dir${NC}"
+                            else
+                                echo -e "${YELLOW}    🗑️  Removing: $package@$vulnerable_version from $package_dir${NC}"
                             fi
-                            purged_count=$((purged_count + 1))
-                            PACKAGES_PURGED=$((PACKAGES_PURGED + 1))
-                        else
-                            echo -e "${RED}    ⚠️  Skipping suspicious path: $package_dir${NC}"
+                            # Validate path before deletion for security
+                            if [[ "$package_dir" == *"/node_modules/"* ]] && [[ "$package_dir" == *"/$package" ]]; then
+                                if [ "$DRY_RUN" = "false" ]; then
+                                    # Use safer deletion - only remove the specific package directory
+                                    if [ -d "$package_dir" ]; then
+                                        rm -r "$package_dir" 2>/dev/null || echo -e "${YELLOW}    ⚠️  Could not remove $package_dir${NC}"
+                                    fi
+                                fi
+                                purged_count=$((purged_count + 1))
+                                PACKAGES_PURGED=$((PACKAGES_PURGED + 1))
+                            else
+                                echo -e "${RED}    ⚠️  Skipping suspicious path: $package_dir${NC}"
+                            fi
+                            break  # Found a match, no need to check other versions of this package
                         fi
-                    fi
+                    done
                 fi
             fi
-        done < <(find "$repo_path" -path "*/node_modules/$package" -type d -L -print0 2>/dev/null)
-    done
+        fi
+    done < <(find "$repo_path" -path "*/node_modules/*" -type d -maxdepth 1 -print0 2>/dev/null)
+    
+    # Clean up
+    rm -f "$temp_file"
+    trap - EXIT
     
     if [ "$purged_count" -eq 0 ]; then
         echo -e "${GREEN}    ✅ No vulnerable packages found in node_modules${NC}"
