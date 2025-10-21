@@ -31,6 +31,30 @@ chmod +x main_script.sh
 ./main_script.sh --help
 ```
 
+### 🛡️ [GlassWorm YARA Detection Suite](./glassworm_yara/)
+
+A comprehensive YARA rule set for detecting GlassWorm malware patterns, including blockchain C2, credential harvesting, and stealth techniques.
+
+**Features:**
+- **Blockchain C2 Detection** - Detects Solana blockchain-based command and control infrastructure
+- **Credential Harvesting** - Identifies NPM, GitHub, OpenVSX, Git, and SSH credential theft patterns
+- **RAT Capabilities** - Detects Remote Access Trojan patterns including SOCKS proxy and VNC
+- **Self-Propagation** - Identifies automated package publishing and worm spread mechanisms
+- **Crypto Wallet Targeting** - Detects targeting of 49+ cryptocurrency wallet extensions
+- **Unicode Stealth** - Identifies invisible Unicode variation selectors used to hide malicious code
+- **Google Calendar C2** - Detects Google Calendar API usage for command and control fallback
+
+**Quick Start:**
+```bash
+# Use with YARA scanner
+yara glassworm_yara/blockchain_c2.yar suspicious_file.js
+yara glassworm_yara/credential_harvesting.yar /path/to/scan/
+yara glassworm_yara/rat_capabilities.yar malicious_package/
+
+# Scan all rules at once
+yara glassworm_yara/*.yar target_directory/
+```
+
 *More tools coming soon! This repository is actively growing with new utilities.*
 
 ## 🤝 Contributing
@@ -97,8 +121,8 @@ We're actively working on expanding this collection with tools that solve real p
 
 ## 📊 Statistics
 
-- **Tools Available**: 1 (actively growing!)
-- **Languages**: Bash (with plans for Python, JavaScript, and more)
+- **Tools Available**: 2 (actively growing!)
+- **Languages**: Bash, YARA (with plans for Python, JavaScript, and more)
 - **License**: MIT
 - **Community**: Open source contributors welcome
 
