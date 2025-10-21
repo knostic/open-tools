@@ -3,3 +3,4 @@
 /testing/tests/test_env
 /vulnerabilities_package_scanner/test_env
 /vulnerable_packages_scanner/test_env
+.cursor/
