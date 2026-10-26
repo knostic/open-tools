@@ -55,6 +55,25 @@ yara glassworm_yara/rat_capabilities.yar malicious_package/
 yara glassworm_yara/*.yar target_directory/
 ```
 
+### 🥦 [Broccoli2Shell Detector](./Broccoli2Shell_detector/)
+
+A read-only bash script that finds code exposed to Broccoli2Shell (CVE-2026-111497), the Brotli decoder out-of-bounds write that can lead to RCE, in a git repository and on the local machine. Every finding comes with a suggested fix.
+
+**Features:**
+- **Node.js** - Version pins (.nvmrc, Dockerfiles, CI, package.json), lockfiles and every installed runtime (nvm, fnm, volta, asdf, mise, n, Homebrew)
+- **Bun, Envoy, Istio and curl** - Image tags and version pins against the fixed releases, plus Envoy Brotli decompressor filters
+- **Python** - Brotli / brotlicffi in requirements, pyproject, poetry/uv/pdm/Pipfile lockfiles and conda files, plus installed packages in interpreters and Poetry, pipx, uv, pipenv and virtualenvwrapper environments
+- **System libraries** - libbrotlidec from apt, rpm, apk, Homebrew and MacPorts
+- **Binary check** - Detects unpatched decoders compiled into .so/.dylib/.node files, vendored sources and bundled wheels (e.g. Pillow)
+- **Other ecosystems** - Ruby, PHP, Go, Rust, .NET and Java bindings
+
+**Quick Start:**
+```bash
+cd Broccoli2Shell_detector
+chmod +x broccoli2shell-detect.sh
+./broccoli2shell-detect.sh /path/to/repo
+```
+
 *More tools coming soon! This repository is actively growing with new utilities.*
 
 ## 🤝 Contributing
@@ -121,7 +140,7 @@ We're actively working on expanding this collection with tools that solve real p
 
 ## 📊 Statistics
 
-- **Tools Available**: 2 (actively growing!)
+- **Tools Available**: 3 (actively growing!)
 - **Languages**: Bash, YARA (with plans for Python, JavaScript, and more)
 - **License**: MIT
 - **Community**: Open source contributors welcome
