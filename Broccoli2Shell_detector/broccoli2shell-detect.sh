@@ -31,8 +31,24 @@
 #                 Lockfiles and node_modules are searched for iltorb (bundles
 #                 an old decoder) and for Express 5.0-5.3 / body-parser
 #                 2.0-2.3, which decode br request bodies (exposure paths).
-#   Python        PyPI Brotli < 1.2.1 and brotlicffi < 1.2.1.0 compile the
-#                 vulnerable decoder. Checked in requirements*.txt/.in,
+#   Bun           1.0.21 - 1.4.3 are vulnerable, fixed in 1.4.4. Checked in
+#                 .bun-version, .tool-versions, package.json packageManager,
+#                 FROM/image oven/bun:<tag>, GitHub Actions bun-version and
+#                 the bun on PATH / in ~/.bun.
+#   Envoy, Istio  Envoy < 1.36.12 / 1.37.8 / 1.38.6 / 1.39.3 / 1.40.0 and
+#                 Istio < 1.29.9 / 1.30.6 / 1.31.2 (per release line) in
+#                 envoyproxy/envoy* and istio/proxyv2|pilot|ztunnel images
+#                 and the envoy on PATH. Proxies only decode Brotli when a
+#                 Brotli decompressor filter is configured, so outdated
+#                 versions are VULN when the repo configures one
+#                 (envoy.extensions.compression.brotli.decompressor), WARN
+#                 otherwise.
+#   curl          curl decodes Brotli only with --compressed and only when
+#                 built with Brotli ("brotli" in curl -V Features); a
+#                 statically linked decoder gets the binary check below.
+#   Python        PyPI Brotli 1.0.3 - 1.2.0 (fixed in 1.0.10 / 1.1.1 /
+#                 1.2.1) and brotlicffi 1.0.3 - 1.2.0.x (fixed in 1.2.1.0)
+#                 compile the vulnerable decoder. Checked in requirements*.txt/.in,
 #                 pyproject.toml, setup.cfg/.py, Pipfile(.lock), poetry.lock,
 #                 uv.lock, pdm.lock and conda environment files (pins and
 #                 constraints that still allow or force a vulnerable
@@ -56,11 +72,12 @@
 #                 BLOCK_SWITCH error code; CMake/meson/conan/vcpkg/bazel and
 #                 .gitmodules references to google/brotli are version-checked.
 #   Others        Ruby brotli gem < 0.9.1, PHP brotli extension < 0.21.1,
-#                 Go andybalholm/brotli and cbrotli, Rust C bindings, .NET
+#                 Go andybalholm/brotli < v1.2.7, cbrotli, Rust C bindings, .NET
 #                 (runtime bundles unpatched Brotli 1.1.0), pyarrow/duckdb
 #                 (bundled copies), Brotli4j.
 #   Call sites    Direct decoder calls (zlib.brotliDecompress*,
-#                 brotli.decompress, ...) are listed to help prioritise.
+#                 brotli.decompress, ...) and curl --compressed /
+#                 CURLOPT_ACCEPT_ENCODING uses are listed to help prioritise.
 #
 #   Levels: VULN = vulnerable component found, WARN = may be vulnerable or
 #   needs a decision, INFO = context / exposure path, OK = verified patched.
@@ -77,11 +94,11 @@
 
 CVE="CVE-2026-111497"
 NODE_DEFAULT_TARGET="24.22.1"
-NODE_NEWEST_COVERED_MAJOR=26          # newest release line named in the advisory
 PY_BROTLI_FIX="1.2.1"
 PY_BROTLICFFI_FIX="1.2.1.0"
 RUBY_BROTLI_FIX="0.9.1"
 PHP_BROTLI_FIX="0.21.1"
+GO_BROTLI_FIX="v1.2.7"
 UPSTREAM_FIXES="1.0.10 / 1.1.1 / 1.2.1"
 # BrotliDecoderErrorString() compiles every error-code name into the decoder.
 # The first string is present in all decoders, the second one only in patched
@@ -198,33 +215,70 @@ brotli_c_status() {
   fi
 }
 
-node_target_for_major() {
-  case $1 in
-    22) echo 22.23.4 ;;
-    24) echo 24.22.1 ;;
-    26) echo 26.12.1 ;;
-    *) echo "$NODE_DEFAULT_TARGET" ;;
+# Runtimes and proxies that bundle their own Brotli decoder, by release line.
+# Fixed versions follow the Wiz advisory: Node.js 22.23.4 / 24.22.1 / 26.12.1,
+# Bun 1.4.4 (affected 1.0.21-1.4.3), Envoy 1.36.12 / 1.37.8 / 1.38.6 / 1.39.3 /
+# 1.40.0, Istio 1.29.9 / 1.30.6 / 1.31.2.
+
+# product_fix PRODUCT LINE: first patched version on release LINE, empty if none
+product_fix() {
+  case $1:$2 in
+    node:22) echo 22.23.4 ;;
+    node:24) echo 24.22.1 ;;
+    node:26) echo 26.12.1 ;;
+    bun:*) echo 1.4.4 ;;
+    envoy:1.36) echo 1.36.12 ;;
+    envoy:1.37) echo 1.37.8 ;;
+    envoy:1.38) echo 1.38.6 ;;
+    envoy:1.39) echo 1.39.3 ;;
+    envoy:1.40) echo 1.40.0 ;;
+    istio:1.29) echo 1.29.9 ;;
+    istio:1.30) echo 1.30.6 ;;
+    istio:1.31) echo 1.31.2 ;;
   esac
 }
 
-# major_kind MAJOR: supported | eol | newer
-node_major_kind() {
-  case $1 in
-    22|24|26) echo supported ;;
-    *) if [ "$1" -gt "$NODE_NEWEST_COVERED_MAJOR" ] 2>/dev/null; then echo newer; else echo eol; fi ;;
-  esac
+product_name() { case $1 in node) echo Node.js ;; bun) echo Bun ;; envoy) echo Envoy ;; istio) echo Istio ;; esac; }
+# newest release line covered by the advisories
+product_newest_line() { case $1 in node) echo 26 ;; envoy) echo 1.40 ;; istio) echo 1.31 ;; esac; }
+# version to suggest for lines without a fix
+product_default_target() { case $1 in node) echo "$NODE_DEFAULT_TARGET" ;; bun) echo 1.4.4 ;; envoy) echo 1.40.0 ;; istio) echo 1.31.2 ;; esac; }
+# version components that name a release line: Node.js "24", Envoy/Istio "1.38"; Bun has a single line
+product_line_parts() { case $1 in node) echo 1 ;; envoy|istio) echo 2 ;; *) echo 0 ;; esac; }
+
+product_line() {
+  local n
+  n=$(product_line_parts "$1")
+  [ "$n" -gt 0 ] && printf '%s' "$2" | cut -d. -f1-"$n"
 }
 
-# node_status X.Y.Z: ok | vuln | eol
-node_status() {
-  local v major
-  v=$(clean_ver "$1"); major=${v%%.*}
-  case $(node_major_kind "$major") in
-    supported) if ver_lt "$v" "$(node_target_for_major "$major")"; then echo vuln; else echo ok; fi ;;
+# product_line_kind PRODUCT LINE: supported | newer | eol
+product_line_kind() {
+  if [ -n "$(product_fix "$1" "$2")" ]; then echo supported
+  elif ver_lt "$(product_newest_line "$1")" "$2"; then echo newer
+  else echo eol
+  fi
+}
+
+product_target() {
+  local t
+  t=$(product_fix "$1" "$2")
+  echo "${t:-$(product_default_target "$1")}"
+}
+
+# product_status PRODUCT X.Y.Z: ok | vuln | eol | old (predates the affected releases)
+product_status() {
+  local p=$1 v line
+  v=$(clean_ver "$2"); line=$(product_line "$p" "$v")
+  if [ "$p" = bun ] && ver_lt "$v" 1.0.21; then echo old; return; fi
+  case $(product_line_kind "$p" "$line") in
+    supported) if ver_lt "$v" "$(product_fix "$p" "$line")"; then echo vuln; else echo ok; fi ;;
     newer) echo ok ;;
     *) echo eol ;;
   esac
 }
+
+node_status() { product_status node "$1"; }
 
 # Does FILE contain a Brotli decoder? prints patched | vulnerable | none
 binary_decoder_state() {
@@ -284,7 +338,7 @@ check_binary() {
 find "$ROOT" \( -name .git -o -name node_modules -o -name .venv -o -name venv -o -name .tox -o -name .nox \
     -o -name site-packages -o -name __pycache__ -o -name .mypy_cache -o -name .pytest_cache -o -name .terraform \) -prune \
   -o -type f \( -name package.json -o -name package-lock.json -o -name npm-shrinkwrap.json -o -name yarn.lock \
-    -o -name pnpm-lock.yaml -o -name bun.lock -o -name .nvmrc -o -name .node-version -o -name .tool-versions \
+    -o -name pnpm-lock.yaml -o -name bun.lock -o -name .nvmrc -o -name .node-version -o -name .bun-version -o -name .tool-versions \
     -o -name 'Dockerfile*' -o -name '*.dockerfile' -o -name 'Containerfile*' -o -name '*.yml' -o -name '*.yaml' \
     -o -name '*requirements*.txt' -o -name '*requirements*.in' -o -name 'constraints*.txt' -o -path '*/requirements/*.txt' \
     -o -name pyproject.toml -o -name setup.cfg -o -name setup.py -o -name Pipfile -o -name Pipfile.lock \
@@ -299,152 +353,247 @@ manifests_matching() {
   RE="$1" awk '{ n = $0; sub(/.*\//, "", n); if (n ~ ENVIRON["RE"]) print }' "$WORK/manifests"
 }
 
-# -------------------------------------------------------- Node.js pins ---
+# ---------------------------------------------- runtime and image pins ---
 
-# eval_node_spec SPEC LOCATION FIX_TEMPLATE [CAP]
+# eval_runtime_spec PRODUCT SPEC LOCATION FIX_TEMPLATE [CAP] [NOTE]
 # FIX_TEMPLATE may contain @V@, replaced by the patched version to use.
-# CAP=WARN downgrades findings (used for CI test matrices).
-eval_node_spec() {
-  local raw=$1 where=$2 tmpl=$3 cap=$4 s v major minor kind target parts lvl
+# CAP=WARN downgrades findings (CI test matrices, proxies without a Brotli
+# decompressor); NOTE is appended to VULN/WARN messages.
+eval_runtime_spec() {
+  local p=$1 raw=$2 where=$3 tmpl=$4 cap=$5 note=$6 name s v line kind target parts lparts lvl floatmsg
+  name=$(product_name "$p")
   s=$(printf '%s' "$raw" | tr -d "\"' \r" | tr 'A-Z' 'a-z')
-  s=${s#lts/}
+  lvl=VULN; [ "$cap" = WARN ] && lvl=WARN
+  floatmsg="$name '$raw' floats; it is only safe if it resolved to a patched release when installed/built$note"
+  if [ "$p" = node ]; then
+    s=${s#lts/}
+    case $s in
+      argon*|boron*|carbon*|dubnium*|erbium*|fermium*|gallium*|hydrogen*|iron*)
+        report $lvl "Node.js '$raw' is an end-of-life line with no patched release" "$where" "${tmpl//@V@/$NODE_DEFAULT_TARGET}"
+        return ;;
+      jod*) s=22 ;;
+      krypton*) s=24 ;;
+    esac
+  fi
   case $s in
-    argon*|boron*|carbon*|dubnium*|erbium*|fermium*|gallium*|hydrogen*|iron*)
-      lvl=VULN; [ "$cap" = WARN ] && lvl=WARN
-      report $lvl "Node.js '$raw' is an end-of-life line with no patched release" "$where" "${tmpl//@V@/$NODE_DEFAULT_TARGET}"
-      return ;;
-    jod*) s=22 ;;
-    krypton*) s=24 ;;
-  esac
-  case $s in
-    *'$'*|*'{{'*) report INFO "Node.js version '$raw' is templated; could not evaluate" "$where"; return ;;
-    ''|latest*|current*|node|stable|lts|lts-*|'*')
-      report WARN "Node.js '$raw' floats; it is only safe if it resolved to a patched release when installed/built" "$where" \
-        "reinstall / rebuild with --pull so it resolves to a patched release, or pin it: ${tmpl//@V@/$NODE_DEFAULT_TARGET}"
+    *'$'*|*'{{'*) report INFO "$name version '$raw' is templated; could not evaluate" "$where"; return ;;
+    ''|latest*|current*|node|stable|lts|lts-*|'*'|canary*|dev|dev-*|*-dev|*-dev-*)
+      report WARN "$floatmsg" "$where" \
+        "reinstall / rebuild with --pull so it resolves to a patched release, or pin it: ${tmpl//@V@/$(product_default_target "$p")}"
       return ;;
     *'>'*|*'<'*|*'^'*|*'~'*|*'||'*)
-      report INFO "Node.js range '$raw' (engines-style) does not choose the runtime; make sure the runtime itself is patched" "$where"
+      report INFO "$name range '$raw' (engines-style) does not choose the version that runs; make sure that one is patched" "$where"
       return ;;
   esac
   v=$(clean_ver "$s")
   if [ -z "$v" ]; then
-    # tags such as "alpine", "slim" or "bookworm" track the latest release
-    report WARN "Node.js '$raw' floats; it is only safe if it resolved to a patched release when installed/built" "$where" \
-      "reinstall / rebuild with --pull so it resolves to a patched release, or pin it: ${tmpl//@V@/$NODE_DEFAULT_TARGET}"
+    # tags such as "alpine", "slim" or "distroless" track the latest release
+    report WARN "$floatmsg" "$where" \
+      "reinstall / rebuild with --pull so it resolves to a patched release, or pin it: ${tmpl//@V@/$(product_default_target "$p")}"
     return
   fi
-  major=${v%%.*}
-  kind=$(node_major_kind "$major")
-  target=$(node_target_for_major "$major")
   parts=$(printf '%s' "$v" | awk -F. '{print NF}')
-  lvl=VULN; [ "$cap" = WARN ] && lvl=WARN
+  lparts=$(product_line_parts "$p")
+  if [ "$parts" -ge 3 ]; then
+    line=$(product_line "$p" "$v"); target=$(product_target "$p" "$line")
+    case $(product_status "$p" "$v") in
+      ok) if [ "$(product_line_kind "$p" "$line")" = newer ]; then
+            report OK "$name $raw is newer than every affected release line" "$where"
+          else
+            report OK "$name $raw is patched" "$where"
+          fi ;;
+      old) report OK "$name $raw predates the affected releases" "$where" ;;
+      vuln) report $lvl "$name $raw bundles a vulnerable Brotli decoder (fixed in $target)$note" "$where" "${tmpl//@V@/$target}" ;;
+      *) report $lvl "$name $raw is an end-of-life line; no patched release exists$note" "$where" "${tmpl//@V@/$target}" ;;
+    esac
+    return
+  fi
+  if [ "$parts" -lt "$lparts" ]; then
+    report WARN "$floatmsg" "$where" \
+      "reinstall / rebuild with --pull so it resolves to a patched release, or pin it: ${tmpl//@V@/$(product_default_target "$p")}"
+    return
+  fi
+  line=$(product_line "$p" "$v"); kind=$(product_line_kind "$p" "$line"); target=$(product_target "$p" "$line")
   if [ "$kind" = newer ]; then
-    report OK "Node.js $raw is newer than every affected release line" "$where"
+    report OK "$name $raw is newer than every affected release line" "$where"
   elif [ "$kind" = eol ]; then
-    report $lvl "Node.js $raw is an end-of-life line; no patched release exists" "$where" "${tmpl//@V@/$NODE_DEFAULT_TARGET}"
-  elif [ "$parts" -ge 3 ]; then
-    if [ "$(node_status "$v")" = ok ]; then
-      report OK "Node.js $raw is patched" "$where"
-    else
-      report $lvl "Node.js $raw bundles a vulnerable Brotli decoder (fixed in $target)" "$where" "${tmpl//@V@/$target}"
-    fi
-  elif [ "$parts" -eq 2 ] && ! ver_lt "$v.0" "$target"; then
-    report OK "Node.js $v.x is patched" "$where"
-  elif [ "$parts" -eq 2 ] && ver_lt "$v.99999" "$target"; then
-    minor=$v
-    report $lvl "Node.js $minor.x never receives the fix (fixed in $target)" "$where" "${tmpl//@V@/$target}"
+    report $lvl "$name $raw is an end-of-life line; no patched release exists$note" "$where" "${tmpl//@V@/$target}"
+  elif [ "$parts" -gt "$lparts" ] && ! ver_lt "$v.0" "$target"; then
+    report OK "$name $v.x is patched" "$where"
+  elif [ "$parts" -gt "$lparts" ] && ver_lt "$v.99999" "$target"; then
+    report $lvl "$name $v.x never receives the fix (fixed in $target)$note" "$where" "${tmpl//@V@/$target}"
   else
-    report WARN "Node.js '$raw' floats within a supported line; safe only if resolved to >= $target when installed/built" "$where" \
+    report WARN "$name '$raw' floats within a supported line; safe only if resolved to >= $target when installed/built$note" "$where" \
       "reinstall / rebuild with --pull so it resolves to >= $target, or pin it: ${tmpl//@V@/$target}"
   fi
 }
 
-# Variant part of a node image tag, kept in the suggested fix:
-# "24.16.0-slim" -> "-slim", "lts-alpine" -> "-alpine", "alpine" -> "-alpine", "latest" -> ""
+# Variant part of an image tag without a version: "lts-alpine" -> "-alpine", "latest" -> ""
 image_tag_suffix() {
   local t
   t=$(printf '%s' "$1" | sed -E 's/^[0-9]+(\.[0-9]+)*//; s/^(lts|latest|current)//; s/^-//')
   printf '%s' "${t:+-$t}"
 }
 
-check_node_pins() {
-  section "Node.js version pins in the repository"
-  local f rel base spec line tag suffix found=0
+# Image tag with its version replaced by @V@, keeping prefixes and variants:
+# "24.16.0-slim" -> "@V@-slim", "v1.38.5" -> "v@V@", "24-alpine" -> "@V@-alpine", "alpine" -> "@V@-alpine",
+# "canary" / "dev-4f3a9c2" -> "@V@" (channels, not variants)
+image_tag_template() {
+  case $1 in
+    *[0-9].[0-9]*) printf '%s' "$1" | sed -E 's/[0-9]+(\.[0-9]+)+/@V@/' ;;
+    [0-9]*) printf '%s' "$1" | sed -E 's/^[0-9]+/@V@/' ;;
+    *alpine*|*slim*|*distroless*|*debian*|*bookworm*|*bullseye*|*trixie*) printf '@V@%s' "$(image_tag_suffix "$1")" ;;
+    *) printf '@V@' ;;
+  esac
+}
+
+# Product shipped in a container image repository, if it is one we track
+image_product() {
+  case $1 in
+    node|*/node) echo node ;;
+    oven/bun|*/oven/bun) echo bun ;;
+    *envoyproxy/envoy|*envoyproxy/envoy-*) echo envoy ;;
+    *istio*/proxyv2|*istio*/pilot|*istio*/ztunnel|*istio*/install-cni) echo istio ;;
+  esac
+}
+
+# Envoy and Istio only decode Brotli when a Brotli decompressor filter is configured
+PROXY_DECOMPRESSOR_HITS=""
+proxy_note() {
+  if [ -n "$PROXY_DECOMPRESSOR_HITS" ]; then
+    echo ""
+  else
+    echo " (only reachable if a Brotli decompressor filter is configured; none found in this repo)"
+  fi
+}
+
+# eval_image REL LINE REPOSITORY TAG KIND: KIND is "FROM" (Dockerfile) or "image" (YAML)
+eval_image() {
+  local rel=$1 line=$2 repo=$3 tag=$4 kind=$5 p cap="" note="" tmpl
+  p=$(image_product "$repo")
+  [ -n "$p" ] || return 1
+  if [ "$tag" = digest ]; then
+    report INFO "$repo image pinned by digest; check the $(product_name "$p") version inside it" "$rel:$line"
+    return 0
+  fi
+  case $p in envoy|istio) note=$(proxy_note); [ -n "$note" ] && cap=WARN ;; esac
+  tmpl=$(image_tag_template "$tag")
+  # Envoy image tags carry a "v" prefix (v1.40.0)
+  case $p:$tmpl in envoy:@V@*) tmpl="v$tmpl" ;; esac
+  if [ "$kind" = FROM ]; then
+    eval_runtime_spec "$p" "$tag" "$rel:$line (FROM $repo:$tag)" "use 'FROM $repo:$tmpl' in $rel:$line and rebuild/redeploy the image" "$cap" "$note"
+  else
+    eval_runtime_spec "$p" "$tag" "$rel:$line (image $repo:$tag)" "use image $repo:$tmpl in $rel:$line and redeploy" "$cap" "$note"
+  fi
+  return 0
+}
+
+# Splits an image reference (field 2 of the input) into repository and tag;
+# prints "line<TAB>repository<TAB>tag" (tag "digest" when pinned by digest).
+IMAGE_SPLIT_AWK='
+  function emit(line, img,   n, p, last, prefix, name, tag) {
+    n = split(img, p, "/"); last = p[n]; prefix = substr(img, 1, length(img) - length(last))
+    name = last; tag = "latest"
+    if (index(last, "@")) { name = substr(last, 1, index(last, "@") - 1); sub(/:.*/, "", name); tag = "digest" }
+    else if (index(last, ":")) { name = substr(last, 1, index(last, ":") - 1); tag = substr(last, index(last, ":") + 1) }
+    print line "\t" prefix name "\t" tag
+  }'
+
+dockerfile_images() {
+  awk "$IMAGE_SPLIT_AWK"'
+    toupper($1) == "ARG" { split($2, kv, "="); if (kv[2] != "") { v = kv[2]; gsub(/["\047]/, "", v); args[kv[1]] = v } }
+    toupper($1) == "FROM" {
+      i = 2; if ($i ~ /^--platform=/) i++
+      img = $i
+      for (a in args) { gsub("\\$\\{" a "\\}", args[a], img); gsub("\\$" a, args[a], img) }
+      emit(NR, img)
+    }' "$1"
+}
+
+yaml_images() {
+  awk "$IMAGE_SPLIT_AWK"'
+    /^[[:space:]]*-?[[:space:]]*image:[[:space:]]*[^[:space:]{|>]/ {
+      v = $0; sub(/^[^:]*:[[:space:]]*/, "", v); sub(/[[:space:]]+#.*/, "", v); gsub(/["\047[:space:]]/, "", v)
+      if (v != "") emit(NR, v)
+    }' "$1"
+}
+
+check_version_pins() {
+  section "Runtime and proxy version pins in the repository (Node.js, Bun, Envoy, Istio)"
+  local f rel base spec line repo tag p found=0
+  PROXY_DECOMPRESSOR_HITS=$(grep -rnE --exclude-dir=node_modules --exclude-dir=.git \
+      --include='*.yaml' --include='*.yml' --include='*.json' --include='*.tpl' \
+      'compression\.brotli\.decompressor|brotli\.decompressor\.v3' "$ROOT" 2>/dev/null)
   while IFS= read -r f; do
     rel=$(relpath "$f"); base=$(basename "$f")
     case $base in
-      .nvmrc|.node-version)
+      .nvmrc|.node-version|.bun-version)
         spec=$(sed -n '/[^[:space:]]/{p;q;}' "$f" | tr -d '[:space:]')
         [ -n "$spec" ] || continue
         found=1
-        eval_node_spec "$spec" "$rel" "set $base to @V@ and reinstall (nvm install / fnm install)"
+        if [ "$base" = .bun-version ]; then
+          eval_runtime_spec bun "$spec" "$rel" "set $base to @V@ and upgrade Bun (bun upgrade)"
+        else
+          eval_runtime_spec node "$spec" "$rel" "set $base to @V@ and reinstall (nvm install / fnm install)"
+        fi
         ;;
       .tool-versions)
-        spec=$(awk '$1 == "nodejs" || $1 == "node" { print $2; exit }' "$f")
-        [ -n "$spec" ] || continue
-        found=1
-        eval_node_spec "$spec" "$rel" "set 'nodejs @V@' in $rel and run asdf/mise install"
+        while read -r p spec; do
+          found=1
+          eval_runtime_spec $p "$spec" "$rel" "set '$p @V@' in $rel and run asdf/mise install"
+        done < <(awk '($1 == "nodejs" || $1 == "node") && $2 != "" { print "node", $2 } $1 == "bun" && $2 != "" { print "bun", $2 }' "$f")
         ;;
       package.json)
         while IFS= read -r spec; do
           found=1
-          eval_node_spec "$spec" "$rel (\"node\": \"$spec\")" "set the Node.js pin in $rel (volta/engines) to @V@"
+          eval_runtime_spec node "$spec" "$rel (\"node\": \"$spec\")" "set the Node.js pin in $rel (volta/engines) to @V@"
         # only version-like values: "exports"/"imports" also use a "node" key for paths
         done < <(grep -Eo '"node"[[:space:]]*:[[:space:]]*"[^"]+"' "$f" | sed -E 's/.*"([^"]+)"$/\1/' |
                  grep -Ei '^([v0-9<>=^~*. x|-]+|lts.*|latest|current|stable)$')
+        while IFS= read -r spec; do
+          found=1
+          eval_runtime_spec bun "$spec" "$rel (\"packageManager\": \"bun@$spec\")" "set \"packageManager\": \"bun@@V@\" in $rel and upgrade Bun (bun upgrade)"
+        done < <(grep -Eo '"packageManager"[[:space:]]*:[[:space:]]*"bun@[^"+]+' "$f" | sed -E 's/.*bun@//')
         ;;
       Dockerfile*|*.dockerfile|Containerfile*)
-        while IFS=$'\t' read -r line tag; do
-          found=1
-          if [ "$tag" = digest ]; then
-            report INFO "node image pinned by digest; check its version with: docker run --rm --entrypoint node <image> --version" "$rel:$line"
-            continue
-          fi
-          suffix=$(image_tag_suffix "$tag")
-          eval_node_spec "$tag" "$rel:$line (FROM node:$tag)" "use 'FROM node:@V@$suffix' in $rel:$line and rebuild/redeploy the image"
-        done < <(awk '
-          toupper($1) == "ARG" { split($2, kv, "="); if (kv[2] != "") { v = kv[2]; gsub(/["\047]/, "", v); args[kv[1]] = v } }
-          toupper($1) == "FROM" {
-            i = 2; if ($i ~ /^--platform=/) i++
-            img = $i
-            for (a in args) { gsub("\\$\\{" a "\\}", args[a], img); gsub("\\$" a, args[a], img) }
-            n = split(img, p, "/"); last = p[n]
-            if (last ~ /^node(:|@|$)/) {
-              tag = last; sub(/^node/, "", tag)
-              if (tag == "") tag = "latest"
-              else if (tag ~ /^@/) tag = "digest"
-              else { sub(/^:/, "", tag); sub(/@.*/, "", tag) }
-              print NR "\t" tag
-            }
-          }' "$f")
+        while IFS=$'\t' read -r line repo tag; do
+          eval_image "$rel" "$line" "$repo" "$tag" FROM && found=1
+        done < <(dockerfile_images "$f")
         ;;
       *.yml|*.yaml)
         # container images (compose, k8s, GitLab, CircleCI)
-        while IFS=$'\t' read -r line tag; do
-          found=1
-          suffix=$(image_tag_suffix "$tag")
-          eval_node_spec "$tag" "$rel:$line (image node:$tag)" "use image node:@V@$suffix in $rel:$line and redeploy"
-        done < <(grep -nE 'image:[[:space:]]*["'\'']?([^[:space:]"'\'']*/)?node:[^[:space:]"'\'']+' "$f" 2>/dev/null |
-                 sed -E 's/^([0-9]+):.*node:([^[:space:]"'\'']+).*/\1	\2/')
-        # GitHub Actions setup-node versions / matrices
+        while IFS=$'\t' read -r line repo tag; do
+          eval_image "$rel" "$line" "$repo" "$tag" image && found=1
+        done < <(yaml_images "$f")
+        # GitHub Actions setup-node / setup-bun versions and matrices
         case $f in
           */.github/workflows/*)
-            while IFS=$'\t' read -r line spec; do
+            while IFS=$'\t' read -r line p spec; do
               found=1
-              eval_node_spec "$spec" "$rel:$line (CI)" "use node-version @V@ in $rel:$line" WARN
+              eval_runtime_spec "$p" "$spec" "$rel:$line (CI)" "use $p-version @V@ in $rel:$line" WARN
             done < <(awk '
-              /^[[:space:]]*-?[[:space:]]*(node-version|node_version|node)[[:space:]]*:[[:space:]]*[^[:space:]]/ {
+              /^[[:space:]]*-?[[:space:]]*(node-version|node_version|node|bun-version|bun_version)[[:space:]]*:[[:space:]]*[^[:space:]]/ {
+                k = $0; sub(/^[[:space:]]*-?[[:space:]]*/, "", k); sub(/[-_[:space:]:].*/, "", k)
                 v = $0; sub(/^[^:]*:[[:space:]]*/, "", v); sub(/[[:space:]]+#.*/, "", v)
                 if (v ~ /\$\{\{/) next
                 gsub(/[][]/, "", v); n = split(v, a, ",")
-                for (i = 1; i <= n; i++) { x = a[i]; gsub(/[[:space:]"\047]/, "", x); sub(/\.x$/, "", x); if (x != "") print NR "\t" x }
+                for (i = 1; i <= n; i++) { x = a[i]; gsub(/[[:space:]"\047]/, "", x); sub(/\.x$/, "", x); if (x != "") print NR "\t" k "\t" x }
               }' "$f")
             ;;
         esac
         ;;
     esac
   done < "$WORK/manifests"
-  [ "$found" = 1 ] || report INFO "no Node.js version pins found (.nvmrc, .tool-versions, Dockerfile, CI)" ""
+  [ "$found" = 1 ] || report INFO "no Node.js, Bun, Envoy or Istio version pins found (.nvmrc, .bun-version, .tool-versions, Dockerfile, YAML, CI)" ""
+
+  # Envoy / Istio configuration that makes the proxy decode Brotli
+  local hit
+  while IFS= read -r hit; do
+    [ -n "$hit" ] || continue
+    report WARN "Envoy Brotli decompressor filter configured: Envoy/Istio proxies using it decode attacker-supplied Brotli" \
+      "$(relpath "${hit%%:*}"):$(printf '%s' "$hit" | cut -d: -f2)" \
+      "run patched proxies (Envoy 1.36.12 / 1.37.8 / 1.38.6 / 1.39.3 / 1.40.0, Istio 1.29.9 / 1.30.6 / 1.31.2) or remove the Brotli decompressor filter until they are"
+  done <<< "$PROXY_DECOMPRESSOR_HITS"
 }
 
 # ---------------------------------------------------- Node.js packages ---
@@ -578,7 +727,8 @@ py_fixed_ver() {
 py_version_status() {
   case $1 in
     brotlipy) echo deprecated ;;
-    brotlicffi) if ver_lt "$2" "$PY_BROTLICFFI_FIX"; then echo vuln; else echo ok; fi ;;
+    # affected: 1.0.3 - 1.2.0.x (Wiz)
+    brotlicffi) if ver_lt "$2" 1.0.3; then echo old; elif ver_lt "$2" "$PY_BROTLICFFI_FIX"; then echo vuln; else echo ok; fi ;;
     *) brotli_c_status "$2" ;;
   esac
 }
@@ -814,8 +964,14 @@ check_other_ecosystems() {
       go.mod)
         if grep -q 'andybalholm/brotli' "$f"; then
           found=1; v=$(sed -nE 's/.*andybalholm\/brotli[[:space:]]+(v[^[:space:]]+).*/\1/p' "$f" | head -1)
-          report WARN "Go port andybalholm/brotli ${v}: same logic error, crash (DoS) only; fixed on 2026-10-23" "$rel" \
-            "go get github.com/andybalholm/brotli@latest (a release from 2026-10-23 or later) && go mod tidy"
+          if [ -z "$v" ]; then
+            report INFO "Go port andybalholm/brotli referenced without a version (fixed in $GO_BROTLI_FIX)" "$rel"
+          elif ver_lt "$(clean_ver "$v")" "${GO_BROTLI_FIX#v}"; then
+            report VULN "Go port andybalholm/brotli $v is affected (fixed in $GO_BROTLI_FIX)" "$rel" \
+              "go get github.com/andybalholm/brotli@$GO_BROTLI_FIX && go mod tidy, then rebuild"
+          else
+            report OK "Go port andybalholm/brotli $v is patched" "$rel"
+          fi
         fi
         if grep -q 'google/brotli/go/cbrotli' "$f"; then
           found=1
@@ -859,8 +1015,18 @@ check_other_ecosystems() {
 
 # ---------------------------------------------- direct decoder usage ---
 
+# print_hits "file:line:text" lines (grep -rn output) under the previous finding, at most 15
+print_hits() {
+  local count
+  count=$(printf '%s\n' "$1" | wc -l | tr -d ' ')
+  printf '%s\n' "$1" | head -15 | while IFS= read -r line; do
+    printf '         %s%s%s\n' "$C_DIM" "$(relpath "${line%%:*}"):$(printf '%s' "$line" | cut -d: -f2)" "$C_RESET"
+  done
+  [ "$count" -gt 15 ] && printf '         %s... and %s more%s\n' "$C_DIM" "$((count - 15))" "$C_RESET"
+}
+
 check_call_sites() {
-  section "Direct Brotli decoder calls in source"
+  section "Direct Brotli decoding in source (decoder calls, curl --compressed)"
   local hits count
   hits=$(grep -rnE --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.venv --exclude-dir=venv \
            --exclude-dir=.tox --exclude-dir=.nox --exclude-dir=site-packages --exclude-dir=dist --exclude-dir=build \
@@ -870,14 +1036,26 @@ check_call_sites() {
            "$ROOT" 2>/dev/null)
   if [ -z "$hits" ]; then
     report INFO "no direct calls found (HTTP clients and body parsers may still decode br implicitly)" ""
-    return
+  else
+    count=$(printf '%s\n' "$hits" | wc -l | tr -d ' ')
+    report INFO "$count call site(s) decode Brotli directly; prioritize them if they handle untrusted data" ""
+    print_hits "$hits"
   fi
-  count=$(printf '%s\n' "$hits" | wc -l | tr -d ' ')
-  report INFO "$count call site(s) decode Brotli directly; prioritize them if they handle untrusted data" ""
-  printf '%s\n' "$hits" | head -15 | while IFS= read -r line; do
-    printf '         %s%s%s\n' "$C_DIM" "$(relpath "${line%%:*}"):$(printf '%s' "$line" | cut -d: -f2)" "$C_RESET"
-  done
-  [ "$count" -gt 15 ] && printf '         %s... and %s more%s\n' "$C_DIM" "$((count - 15))" "$C_RESET"
+
+  # curl only decodes responses when asked to (--compressed / CURLOPT_ACCEPT_ENCODING)
+  hits=$( { grep -rnE --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=.venv --exclude-dir=venv \
+              --exclude-dir=.tox --exclude-dir=site-packages \
+              --include='*.sh' --include='*.bash' --include='*.zsh' --include='*.yml' --include='*.yaml' \
+              --include='Dockerfile*' --include='Makefile' --include='*.mk' --include='*.c' --include='*.cc' \
+              --include='*.cpp' --include='*.h' --include='*.php' --include='*.py' --include='*.rb' \
+              -e 'curl[^|;&]*[[:space:]]--compressed' -e 'CURLOPT_ACCEPT_ENCODING' "$ROOT" 2>/dev/null
+            find "$ROOT" -name .git -prune -o -type f -name .curlrc -print 2>/dev/null |
+              while IFS= read -r f; do grep -nHE '^[[:space:]]*(--)?compressed' "$f"; done; } )
+  if [ -n "$hits" ]; then
+    count=$(printf '%s\n' "$hits" | wc -l | tr -d ' ')
+    report INFO "$count place(s) make curl/libcurl decode compressed responses; with a Brotli-enabled curl this reaches the decoder, so make sure that curl/libbrotlidec is patched" ""
+    print_hits "$hits"
+  fi
 }
 
 # -------------------------------------------------- native binaries ---
@@ -906,7 +1084,7 @@ check_node_runtime() {
     v=$(node --version 2>/dev/null); real=$(resolve_path "$node")
     bv=$(node -p 'process.versions.brotli' 2>/dev/null)
     shared=$(node -p 'process.config.variables.node_shared_brotli' 2>/dev/null)
-    st=$(node_status "$v"); target=$(node_target_for_major "$(clean_ver "$v" | cut -d. -f1)")
+    st=$(node_status "$v"); target=$(product_target node "$(clean_ver "$v" | cut -d. -f1)")
     if [ "$shared" = true ]; then
       report INFO "node $v links the system libbrotli (distro build); it is patched by the system library update below" "$real"
     elif [ "$st" = ok ]; then
@@ -959,6 +1137,53 @@ check_node_runtime() {
       fi
     done < <(brew list --versions 2>/dev/null | awk '$1 ~ /^node(@[0-9]+)?$/ { print $1, $NF }')
   fi
+}
+
+check_bun_envoy_curl() {
+  section "Bun, Envoy and curl on this machine"
+  local bin v any=0
+  for bin in $(command -v bun 2>/dev/null) "${BUN_INSTALL:-$HOME/.bun}/bin/bun"; do
+    [ -x "$bin" ] || continue
+    seen_once "bun:$(resolve_path "$bin")" || continue
+    v=$("$bin" --version 2>/dev/null)
+    [ -n "$v" ] || continue
+    any=1
+    case $(product_status bun "$v") in
+      vuln) report VULN "Bun $v bundles a vulnerable Brotli decoder (fixed in $(product_target bun ""))" "$bin" \
+              "bun upgrade (to >= $(product_target bun "")), rebuild executables made with 'bun build --compile' and restart Bun processes" ;;
+      old) report OK "Bun $v predates the affected releases (1.0.21 - 1.4.3)" "$bin" ;;
+      *) report OK "Bun $v is patched" "$bin" ;;
+    esac
+  done
+
+  if command -v envoy >/dev/null 2>&1; then
+    # "envoy  version: <sha>/1.38.5/Clean/RELEASE/BoringSSL"
+    v=$(envoy --version 2>/dev/null | grep -Eo '/[0-9]+\.[0-9]+\.[0-9]+/' | head -1 | tr -d /)
+    if [ -n "$v" ]; then
+      any=1
+      eval_runtime_spec envoy "$v" "$(command -v envoy)" "upgrade Envoy to @V@ (or newer on a supported branch) and restart it" \
+        WARN " (only reachable if a Brotli decompressor filter is configured)"
+    fi
+  fi
+
+  # curl decodes Brotli only with --compressed and only when built with Brotli support
+  for bin in $(command -v curl 2>/dev/null) /opt/homebrew/opt/curl/bin/curl /usr/local/opt/curl/bin/curl; do
+    [ -x "$bin" ] || continue
+    seen_once "curl:$(resolve_path "$bin")" || continue
+    any=1
+    v=$("$bin" -V 2>/dev/null | awk 'NR == 1 { print $2 }')
+    if ! "$bin" -V 2>/dev/null | grep -i '^Features:' | grep -qiw brotli; then
+      report OK "curl $v is built without Brotli support" "$bin"
+      continue
+    fi
+    case $(binary_decoder_state "$(resolve_path "$bin")") in
+      vulnerable) report VULN "curl $v has an unpatched Brotli decoder linked in statically" "$bin" \
+                    "upgrade curl to a build with Brotli $UPSTREAM_FIXES (your vendor's update, or brew upgrade curl)" ;;
+      patched) report OK "curl $v has a patched Brotli decoder linked in statically" "$bin" ;;
+      *) report INFO "curl $v decodes Brotli (with --compressed) through the shared libbrotlidec; see the system library check" "$bin" ;;
+    esac
+  done
+  [ "$any" = 1 ] || report INFO "Bun, Envoy and curl not found" ""
 }
 
 PY_PROBE='
@@ -1204,7 +1429,7 @@ else
   printf ' (not a git repository; scanning the directory anyway)\n'
 fi
 
-check_node_pins
+check_version_pins
 check_node_packages
 check_python_manifests
 [ "$SCAN_SYSTEM" = 1 ] || python_exposure_note
@@ -1218,6 +1443,7 @@ if [ "$SCAN_SYSTEM" = 1 ]; then
   # otherwise pick the runtime pinned by the scanned repository.
   cd / || exit 2
   check_node_runtime
+  check_bun_envoy_curl
   check_python_interpreters
   check_system_brotli
   check_other_runtimes
@@ -1233,8 +1459,11 @@ else
   cat <<EOF
 
 ${C_BOLD}After upgrading${C_RESET}
-  - Restart every process, rebuild every image (docker build --pull) and redeploy.
+  - Restart every process, rebuild every image (docker build --pull) and redeploy,
+    then verify that the patched components are the ones actually loaded.
   - Commit updated lockfiles, or the next build reinstalls the vulnerable version.
+  - Rebuild executables that bundle a runtime (bun build --compile, statically
+    linked curl or Brotli).
   - Check everywhere code runs: production, staging, CI runners, build images,
     serverless runtimes and laptops (docker run --rm --entrypoint node <image> --version).
 
@@ -1243,11 +1472,17 @@ ${C_BOLD}If you cannot upgrade yet${C_RESET}
     gzip/deflate) and drop extras such as httpx[brotli] and aiohttp[speedups].
   - Inbound: reject request bodies with Content-Encoding: br at your proxy/WAF, e.g. nginx:
       if (\$http_content_encoding ~* "br") { return 415; }
+  - Outbound: disable Brotli decompression in HTTP clients or reject responses with
+    Content-Encoding: br before they are decoded. Removing br from Accept-Encoding
+    alone does not help; a malicious server can send Brotli anyway.
+  - Envoy / Istio: remove the Brotli decompressor filter until the proxies are patched.
+  - curl: drop --compressed (scripts, aliases, CI, .curlrc) for untrusted URLs.
   - Node.js has no workaround: upgrading the runtime is the only complete fix.
-  - Removing br from Accept-Encoding does not protect outbound fetches; a malicious
-    server can send Brotli anyway.
+  - Monitor WAF, application and network logs for Brotli-encoded traffic and watch
+    for unexpected crashes of the affected services.
 
-Reference: https://broccoli2shell.com
+References: https://broccoli2shell.com
+            https://www.wiz.io/blog/cve-2026-111497-brotli-rce-node-js
 EOF
 fi
 

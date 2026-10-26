@@ -61,6 +61,7 @@ A read-only bash script that finds code exposed to Broccoli2Shell (CVE-2026-1114
 
 **Features:**
 - **Node.js** - Version pins (.nvmrc, Dockerfiles, CI, package.json), lockfiles and every installed runtime (nvm, fnm, volta, asdf, mise, n, Homebrew)
+- **Bun, Envoy, Istio and curl** - Image tags and version pins against the fixed releases, plus Envoy Brotli decompressor filters
 - **Python** - Brotli / brotlicffi in requirements, pyproject, poetry/uv/pdm/Pipfile lockfiles and conda files, plus installed packages in interpreters and Poetry, pipx, uv, pipenv and virtualenvwrapper environments
 - **System libraries** - libbrotlidec from apt, rpm, apk, Homebrew and MacPorts
 - **Binary check** - Detects unpatched decoders compiled into .so/.dylib/.node files, vendored sources and bundled wheels (e.g. Pillow)
