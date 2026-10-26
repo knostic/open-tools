@@ -14,8 +14,11 @@
 # pipenv, virtualenvwrapper) and Brotli libraries on this machine.
 # Every finding comes with a suggested fix.
 #
-# Read-only: nothing is installed and no project code is executed (Python
-# interpreters are only started with -I to read installed package metadata).
+# Read-only: nothing is installed or changed, and no code from the scanned
+# repository is run. Only the installed tools' own version and metadata
+# commands run (node --version / -p with NODE_OPTIONS cleared, python -I,
+# bun / envoy / curl --version, brew, dpkg, rpm, apk, php, gem). Note that
+# python -I still processes .pth files in the interpreter's site-packages.
 #
 # How it detects the vulnerability
 #   Patched code is recognised in two ways: by version numbers, and by the
@@ -53,7 +56,8 @@
 #                 uv.lock, pdm.lock and conda environment files (pins and
 #                 constraints that still allow or force a vulnerable
 #                 release), in *.dist-info of virtualenvs inside the repo, in
-#                 every Python interpreter on PATH / pyenv / conda, and in
+#                 every Python interpreter on PATH / pyenv / conda (and its
+#                 user site directory), and in
 #                 Poetry, pipx, uv tool, pipenv and virtualenvwrapper envs.
 #   System lib    libbrotlidec from apt/dpkg (changelog mentions the CVE?),
 #                 rpm, apk, Homebrew and MacPorts, compared against the fixed
@@ -73,8 +77,9 @@
 #                 .gitmodules references to google/brotli are version-checked.
 #   Others        Ruby brotli gem < 0.9.1, PHP brotli extension < 0.21.1,
 #                 Go andybalholm/brotli < v1.2.7, cbrotli, Rust C bindings, .NET
-#                 (runtime bundles unpatched Brotli 1.1.0), pyarrow/duckdb
-#                 (bundled copies), Brotli4j.
+#                 projects (runtime fixed in 8.0.33 / 9.0.22 / 10.0.14 /
+#                 11.0.0-rc.3), pyarrow/duckdb (unpatched bundled copies),
+#                 Brotli4j.
 #   Call sites    Direct decoder calls (zlib.brotliDecompress*,
 #                 brotli.decompress, ...) and curl --compressed /
 #                 CURLOPT_ACCEPT_ENCODING uses are listed to help prioritise.
@@ -99,6 +104,7 @@ PY_BROTLICFFI_FIX="1.2.1.0"
 RUBY_BROTLI_FIX="0.9.1"
 PHP_BROTLI_FIX="0.21.1"
 GO_BROTLI_FIX="v1.2.7"
+DOTNET_FIXES="8.0.33 / 9.0.22 / 10.0.14 (11.0.0-rc.3)"
 UPSTREAM_FIXES="1.0.10 / 1.1.1 / 1.2.1"
 # BrotliDecoderErrorString() compiles every error-code name into the decoder.
 # The first string is present in all decoders, the second one only in patched
@@ -314,6 +320,12 @@ binary_owner_fix() {
   esac
 }
 
+# native_decoder_files DIR...: native libraries under DIR that embed a Brotli decoder
+native_decoder_files() {
+  find "$@" -type f \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.pyd' -o -name '*.node' \) \
+    -size -300M -print0 2>/dev/null | xargs -0 grep -a -l -F "$DECODER_MARKER" 2>/dev/null
+}
+
 # check_binary FILE LABEL [UPGRADE_TEMPLATE]; each file is reported once even
 # if several scans (repo, interpreters, virtualenvs) reach it.
 check_binary() {
@@ -385,9 +397,9 @@ eval_runtime_spec() {
       report INFO "$name range '$raw' (engines-style) does not choose the version that runs; make sure that one is patched" "$where"
       return ;;
   esac
-  v=$(clean_ver "$s")
+  v=$(spec_version "$s")
   if [ -z "$v" ]; then
-    # tags such as "alpine", "slim" or "distroless" track the latest release
+    # tags such as "alpine3.20", "slim" or "distroless" track the latest release
     report WARN "$floatmsg" "$where" \
       "reinstall / rebuild with --pull so it resolves to a patched release, or pin it: ${tmpl//@V@/$(product_default_target "$p")}"
     return
@@ -428,21 +440,31 @@ eval_runtime_spec() {
   fi
 }
 
-# Variant part of an image tag without a version: "lts-alpine" -> "-alpine", "latest" -> ""
-image_tag_suffix() {
-  local t
-  t=$(printf '%s' "$1" | sed -E 's/^[0-9]+(\.[0-9]+)*//; s/^(lts|latest|current)//; s/^-//')
-  printf '%s' "${t:+-$t}"
+# Product version carried by a version spec or image tag, empty when it floats.
+# Only a leading version ("24.16.0-alpine3.20", "v1.38.5") or a trailing one after
+# a variant prefix ("distroless-v1.38.5") counts; "alpine3.20" is a distro version.
+spec_version() {
+  case $1 in
+    [0-9]*|v[0-9]*) clean_ver "$1" ;;
+    *-[0-9]*|*-v[0-9]*) printf '%s' "$1" | sed -nE 's/^.*-v?([0-9]+(\.[0-9]+)+)$/\1/p' ;;
+  esac
 }
 
 # Image tag with its version replaced by @V@, keeping prefixes and variants:
-# "24.16.0-slim" -> "@V@-slim", "v1.38.5" -> "v@V@", "24-alpine" -> "@V@-alpine", "alpine" -> "@V@-alpine",
-# "canary" / "dev-4f3a9c2" -> "@V@" (channels, not variants)
+# "24.16.0-slim" -> "@V@-slim", "24-alpine3.20" -> "@V@-alpine3.20", "v1.38.5" -> "v@V@",
+# "distroless-v1.38.5" -> "distroless-v@V@", "lts-alpine3.21" / "hydrogen-alpine3.21" ->
+# "@V@-alpine3.21", "bookworm-slim" -> "@V@-bookworm-slim", "canary" / "dev-4f3a9c2" -> "@V@"
 image_tag_template() {
-  case $1 in
-    *[0-9].[0-9]*) printf '%s' "$1" | sed -E 's/[0-9]+(\.[0-9]+)+/@V@/' ;;
-    [0-9]*) printf '%s' "$1" | sed -E 's/^[0-9]+/@V@/' ;;
-    *alpine*|*slim*|*distroless*|*debian*|*bookworm*|*bullseye*|*trixie*) printf '@V@%s' "$(image_tag_suffix "$1")" ;;
+  local t=$1 r
+  case $t in
+    [0-9]*|v[0-9]*) printf '%s' "$t" | sed -E 's/^(v?)[0-9]+(\.[0-9]+)*/\1@V@/'; return ;;
+  esac
+  r=$(printf '%s' "$t" | sed -nE 's/^(.*-)(v?)[0-9]+(\.[0-9]+)+$/\1\2@V@/p')
+  if [ -n "$r" ]; then printf '%s' "$r"; return; fi
+  # drop channel aliases and Node.js LTS codenames, keep the distro variant
+  r=$(printf '%s-' "$t" | sed -E 's/^((lts|latest|current|stable|canary|argon|boron|carbon|dubnium|erbium|fermium|gallium|hydrogen|iron|jod|krypton)-)+//; s/-$//')
+  case $r in
+    alpine*|slim*|bookworm*|bullseye*|buster*|trixie*|distroless*|debian*) printf '@V@-%s' "$r" ;;
     *) printf '@V@' ;;
   esac
 }
@@ -993,10 +1015,10 @@ check_other_ecosystems() {
         if grep -rqE --exclude-dir=node_modules --exclude-dir=.git --exclude-dir=bin --exclude-dir=obj \
              --include='*.cs' --include='*.fs' --include='*.vb' \
              'BrotliStream|BrotliDecoder|DecompressionMethods\.(Brotli|All)|AddRequestDecompression' "$ROOT" 2>/dev/null; then
-          report WARN ".NET project uses Brotli decoding; the .NET runtime bundles unpatched Brotli 1.1.0 (no fix yet, dotnet/runtime #136422)" "$rel" \
-            ".NET: avoid decoding untrusted Brotli (drop DecompressionMethods.Brotli/All from HttpClient, do not enable br in request decompression) until a patched runtime ships"
+          report WARN ".NET project uses Brotli decoding; .NET runtimes before $DOTNET_FIXES bundle a vulnerable decoder" "$rel" \
+            "run .NET runtime $DOTNET_FIXES or later (update the SDK / runtime images, e.g. mcr.microsoft.com/dotnet/aspnet:8.0.33, and redeploy); runtimes built from public GitHub source are still affected"
         else
-          report INFO ".NET project found; the .NET runtime bundles unpatched Brotli 1.1.0 (no direct Brotli use detected)" "$rel"
+          report INFO ".NET project found (no direct Brotli use detected); .NET runtimes before $DOTNET_FIXES bundle a vulnerable decoder" "$rel"
         fi ;;
       pom.xml|build.gradle|build.gradle.kts)
         if grep -q 'brotli4j' "$f"; then
@@ -1081,9 +1103,10 @@ check_node_runtime() {
   if [ -z "$node" ]; then
     report INFO "node not found in PATH" ""
   else
-    v=$(node --version 2>/dev/null); real=$(resolve_path "$node")
-    bv=$(node -p 'process.versions.brotli' 2>/dev/null)
-    shared=$(node -p 'process.config.variables.node_shared_brotli' 2>/dev/null)
+    # NODE_OPTIONS could preload modules (--require); run node without it
+    v=$(env -u NODE_OPTIONS node --version 2>/dev/null); real=$(resolve_path "$node")
+    bv=$(env -u NODE_OPTIONS node -p 'process.versions.brotli' 2>/dev/null)
+    shared=$(env -u NODE_OPTIONS node -p 'process.config.variables.node_shared_brotli' 2>/dev/null)
     st=$(node_status "$v"); target=$(product_target node "$(clean_ver "$v" | cut -d. -f1)")
     if [ "$shared" = true ]; then
       report INFO "node $v links the system libbrotli (distro build); it is patched by the system library update below" "$real"
@@ -1186,29 +1209,42 @@ check_bun_envoy_curl() {
   [ "$any" = 1 ] || report INFO "Bun, Envoy and curl not found" ""
 }
 
+# Runs with -I, which also hides the user site directory (pip install --user),
+# so that directory is read explicitly and its packages are tagged with it.
 PY_PROBE='
-import sys, site
+import os, sys, site
+want = {"brotli", "brotlicffi", "brotlipy", "urllib3", "requests", "aiohttp", "httpx", "scrapy", "pyarrow", "duckdb", "pillow"}
+try:
+    user = site.getusersitepackages()
+except Exception:
+    user = ""
+print("PREFIX\t" + sys.prefix)
 try:
     import importlib.metadata as m
-    dists = [((d.metadata.get("Name") or "").lower(), d.version) for d in m.distributions()]
+    found = set()
+    for where, kw in (("", {}), (user, {"path": [user]})):
+        if kw and not os.path.isdir(user):
+            continue
+        for d in m.distributions(**kw):
+            n = (d.metadata.get("Name") or "").lower()
+            if n in want:
+                found.add((n, d.version, where))
+    for n, v, where in sorted(found):
+        print("PKG\t%s\t%s\t%s" % (n, v, where))
 except Exception:
-    dists = []
-print("PREFIX\t" + sys.prefix)
-want = {"brotli", "brotlicffi", "brotlipy", "urllib3", "requests", "aiohttp", "httpx", "scrapy", "pyarrow", "duckdb", "pillow"}
-for n, v in sorted(set(dists)):
-    if n in want:
-        print("PKG\t%s\t%s" % (n, v))
+    pass
 try:
-    paths = site.getsitepackages() + [site.getusersitepackages()]
+    paths = site.getsitepackages() + [user]
 except Exception:
-    paths = []
+    paths = [user]
 for p in paths:
-    print("SITE\t" + p)
+    if p:
+        print("SITE\t" + p)
 '
 
 check_python_interpreters() {
   section "Python on this machine"
-  local py prefixes=$'\n' out prefix kind a b sites f any=0
+  local py prefixes=$'\n' out prefix kind a b c where sites f any=0
   for py in $(command -v python3 python 2>/dev/null) \
             "${PYENV_ROOT:-$HOME/.pyenv}"/versions/*/bin/python3 \
             "$HOME"/miniconda3/bin/python3 "$HOME"/anaconda3/bin/python3 "$HOME"/miniforge3/bin/python3; do
@@ -1219,21 +1255,28 @@ check_python_interpreters() {
     prefixes="$prefixes$prefix"$'\n'; any=1
     printf '  %s%s%s\n' "$C_DIM" "$prefix" "$C_RESET"
     local hit=0
-    while IFS=$'\t' read -r kind a b; do
-      case $kind:$a in
-        PKG:brotli|PKG:brotlicffi|PKG:brotlipy)
-          hit=1; eval_py_pkg "$a" "==$b" "$prefix" "$py -m $(py_fix_cmd "$a")" ;;
-        PKG:*) py_track_other "$a" "$b" "$prefix" ;;
+    while IFS=$'\t' read -r kind a b c; do
+      [ "$kind" = PKG ] || continue
+      where=$prefix
+      if [ -n "$c" ]; then
+        # user site directories are shared by interpreters of the same Python version
+        seen_once "pyuser:$c:$a:$b" || continue
+        where="$c (user site)"
+      fi
+      case $a in
+        brotli|brotlicffi|brotlipy)
+          hit=1; eval_py_pkg "$a" "==$b" "$where" "$py -m $(py_fix_cmd "$a")${c:+ --user}" ;;
+        *) py_track_other "$a" "$b" "$where" ;;
       esac
     done <<< "$out"
     [ "$hit" = 1 ] || report OK "Brotli / brotlicffi packages not installed" ""
-    # Brotli decoders shipped inside wheels (Brotli, brotlicffi, Pillow, ...)
+    # Brotli decoders shipped inside wheels (Brotli, brotlicffi, Pillow, pyarrow, ...)
     if [ "$SCAN_BINARIES" = 1 ]; then
       while IFS= read -r sites; do
         [ -d "$sites" ] || continue
         while IFS= read -r f; do
           check_binary "$f" "wheel binary" "$py -m pip install -U @PKG@"
-        done < <(find "$sites" -maxdepth 4 -type f \( -iname '*brotli*.so*' -o -iname '*brotli*.dylib' -o -iname '*brotli*.pyd' \) 2>/dev/null)
+        done < <(native_decoder_files "$sites")
       done < <(printf '%s\n' "$out" | awk -F'\t' '$1 == "SITE" { print $2 }' | sort -u)
     fi
   done
@@ -1296,9 +1339,9 @@ check_external_venvs() {
                  -o -iname 'pillow-[0-9]*' \) 2>/dev/null)
       if [ "$SCAN_BINARIES" = 1 ]; then
         while IFS= read -r f; do
-          [ "$(binary_decoder_state "$f")" = none ] || hits=1
+          hits=1
           check_binary "$f" "$mgr env '$envname' binary" "$tmpl"
-        done < <(find "$env" -type f \( -iname '*brotli*.so*' -o -iname '*brotli*.dylib' -o -iname '*brotli*.pyd' \) 2>/dev/null)
+        done < <(native_decoder_files "$env")
       fi
     done
     [ "$hits" = 1 ] || report OK "$count $mgr environment(s), no Brotli decoder found" ""

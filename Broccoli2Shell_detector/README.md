@@ -32,7 +32,7 @@ chmod +x broccoli2shell-detect.sh
 ./broccoli2shell-detect.sh --help
 ```
 
-**Default behaviour**: the script only reads files. It installs nothing, changes nothing and never runs project code. Python interpreters are started with `-I` only to read installed package metadata.
+**Default behaviour**: the script only reads files. It installs nothing, changes nothing and never runs code from the scanned repository. It only runs the installed tools' own version and metadata commands: `node --version` / `node -p` (with `NODE_OPTIONS` cleared), `python -I` to read package metadata, `bun` / `envoy` / `curl` version commands, and the system package managers. `python -I` still processes `.pth` files in each interpreter's own site-packages.
 
 ## 🎛️ Options
 
@@ -81,8 +81,8 @@ curl decodes Brotli only when asked to (`--compressed`, or `CURLOPT_ACCEPT_ENCOD
 The PyPI packages **Brotli 1.0.3 – 1.2.0** (fixed in 1.0.10 / 1.1.1 / 1.2.1) and **brotlicffi 1.0.3 – 1.2.0.x** (fixed in 1.2.1.0) compile the vulnerable decoder. Your code doesn't need to import them to be exposed.
 - **Manifests and lockfiles**: `requirements*.txt` / `.in`, `pyproject.toml`, `setup.cfg` / `setup.py`, `Pipfile` / `Pipfile.lock`, `poetry.lock`, `uv.lock`, `pdm.lock` and conda environment files. Exact pins are checked, and so are constraints that still allow a vulnerable release (`>=1.0`) or force one (`<1.2.1`, `~=1.1.0`)
 - **Extras** that pull Brotli in (`httpx[brotli]`, `aiohttp[speedups]`), plus pyarrow and duckdb, which bundle unpatched copies
-- **Installed packages** in virtualenvs inside the repo, in every interpreter on `PATH`, pyenv and conda, and in virtualenvs kept elsewhere by **Poetry, pipx, uv tools, pipenv and virtualenvwrapper**
-- **Compiled libraries bundled in packages**, such as the `libbrotlidec` inside Pillow wheels, found by the binary check below
+- **Installed packages** in virtualenvs inside the repo, in every interpreter on `PATH`, pyenv and conda (including `pip install --user` packages in the user site directory), and in virtualenvs kept elsewhere by **Poetry, pipx, uv tools, pipenv and virtualenvwrapper**
+- **Compiled libraries in installed packages**: every native library in these environments gets the binary check below, so decoders bundled in Pillow's `libbrotlidec` or statically linked into other extensions are found
 
 ### **🐧 System Library**
 - `libbrotlidec` / `libbrotli1` from apt/dpkg (also checks whether the package changelog mentions the CVE), rpm, apk, Homebrew and MacPorts
@@ -93,7 +93,7 @@ The PyPI packages **Brotli 1.0.3 – 1.2.0** (fixed in 1.0.10 / 1.1.1 / 1.2.1) a
 - **Vendored C sources**: a vendored `decode.h` is patched if it defines the `BLOCK_SWITCH` error code. References to `google/brotli` in CMake, meson, conan, vcpkg, bazel and `.gitmodules` are version-checked.
 
 ### **🧩 Other Ecosystems**
-Ruby brotli gem < 0.9.1, PHP brotli extension < 0.21.1, Go `andybalholm/brotli` < v1.2.7 and `cbrotli`, Rust C bindings, .NET (the runtime bundles unpatched Brotli 1.1.0) and Brotli4j.
+Ruby brotli gem < 0.9.1, PHP brotli extension < 0.21.1, Go `andybalholm/brotli` < v1.2.7 and `cbrotli`, Rust C bindings, .NET projects (the runtime is fixed in 8.0.33, 9.0.22, 10.0.14 and 11.0.0-rc.3; runtimes built from public GitHub source are still affected) and Brotli4j.
 
 ### **📍 Call Sites**
 Direct decoder calls such as `zlib.brotliDecompress*`, `createBrotliDecompress` and `brotli.decompress`, and curl calls that decode responses (`--compressed`, `CURLOPT_ACCEPT_ENCODING`), are listed so you can fix the code that handles untrusted data first.
@@ -166,7 +166,8 @@ Use `--strict` to also fail the build on warnings, such as floating `node:24` im
 
 ## ⚠️ Limitations
 
-- **Version data**: fixed versions reflect the [Wiz](https://www.wiz.io/blog/cve-2026-111497-brotli-rce-node-js) and [broccoli2shell.com](https://broccoli2shell.com) advisories as of **26 October 2026**. .NET, DuckDB, pyarrow and others had no fixed release at that time.
+- **Version data**: fixed versions reflect the [Wiz](https://www.wiz.io/blog/cve-2026-111497-brotli-rce-node-js) and [broccoli2shell.com](https://broccoli2shell.com) advisories as of **26 October 2026**. DuckDB and pyarrow (Apache Arrow's bundled build) had no fixed release at that time.
+- **macOS system libraries**: Apple's own libraries live in the dyld shared cache, not as files on disk, so the binary check can't see them. A clean macOS result covers Homebrew, MacPorts and files on disk, not Apple's built-in copies.
 - **Binary check**: a decoder built without its error-message strings isn't detected. It also won't be reported as vulnerable by mistake.
 - **No fixed version known**: for Brotli4j the advisories name no fixed version, so the script tells you to update to the latest release.
 - **Proxy configuration**: Istio versions set only through Helm values or IstioOperator `tag:` fields, and Envoy decompressor filters defined outside the repo, aren't detected.
