@@ -135,6 +135,11 @@ done
 
 ROOT=$(cd "$TARGET" 2>/dev/null && pwd -P) || { echo "not a directory: $TARGET" >&2; exit 2; }
 
+# BusyBox grep (Alpine) lacks --include / --exclude-dir; the source checks would
+# then find nothing and report a clean result.
+grep -r -q --include='*' --exclude-dir=.git x /dev/null 2>/dev/null
+[ $? -le 1 ] || { echo "GNU or BSD grep is required (on Alpine: apk add grep)" >&2; exit 2; }
+
 if [ "$USE_COLOR" = 1 ] && [ -t 1 ] && [ -z "${NO_COLOR:-}" ]; then
   C_RED=$'\033[1;31m' C_YELLOW=$'\033[1;33m' C_GREEN=$'\033[32m' C_BLUE=$'\033[36m'
   C_BOLD=$'\033[1m' C_DIM=$'\033[2m' C_RESET=$'\033[0m'
@@ -288,8 +293,9 @@ node_status() { product_status node "$1"; }
 
 # Does FILE contain a Brotli decoder? prints patched | vulnerable | none
 binary_decoder_state() {
-  if ! LC_ALL=C grep -a -q -F "$DECODER_MARKER" "$1" 2>/dev/null; then echo none
-  elif LC_ALL=C grep -a -q -F "$PATCH_MARKER" "$1" 2>/dev/null; then echo patched
+  # no -a: BusyBox grep lacks it, and -q / -l match binary files without it
+  if ! LC_ALL=C grep -q -F "$DECODER_MARKER" "$1" 2>/dev/null; then echo none
+  elif LC_ALL=C grep -q -F "$PATCH_MARKER" "$1" 2>/dev/null; then echo patched
   else echo vulnerable
   fi
 }
@@ -323,7 +329,7 @@ binary_owner_fix() {
 # native_decoder_files DIR...: native libraries under DIR that embed a Brotli decoder
 native_decoder_files() {
   find "$@" -type f \( -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.pyd' -o -name '*.node' \) \
-    -size -300M -print0 2>/dev/null | xargs -0 grep -a -l -F "$DECODER_MARKER" 2>/dev/null
+    -size -307200k -print0 2>/dev/null | xargs -0 grep -l -F "$DECODER_MARKER" 2>/dev/null
 }
 
 # check_binary FILE LABEL [UPGRADE_TEMPLATE]; each file is reported once even
@@ -1090,7 +1096,7 @@ check_repo_binaries() {
     check_binary "$f" "native binary"
   done < <(find "$ROOT" -name .git -prune -o -type f \( -name '*.node' -o -name '*.so' -o -name '*.so.*' \
              -o -name '*.dylib' -o -name '*.pyd' -o -name '*.dll' -o -name '*.jnilib' -o -name '*.a' \) \
-             -size -300M -print0 2>/dev/null | xargs -0 grep -a -l -F "$DECODER_MARKER" 2>/dev/null)
+             -size -307200k -print0 2>/dev/null | xargs -0 grep -l -F "$DECODER_MARKER" 2>/dev/null)
   [ "$found" = 1 ] || report INFO "no native binaries embedding a Brotli decoder found" ""
 }
 
@@ -1219,6 +1225,7 @@ try:
 except Exception:
     user = ""
 print("PREFIX\t" + sys.prefix)
+print("VERSION\t%d.%d" % sys.version_info[:2])
 try:
     import importlib.metadata as m
     found = set()
@@ -1242,15 +1249,27 @@ for p in paths:
         print("SITE\t" + p)
 '
 
+# python3.X interpreters on PATH: Debian/Ubuntu install several side by side,
+# each with its own /usr/local/lib/python3.X/dist-packages
+versioned_pythons() {
+  local IFS=: d f
+  for d in $PATH; do
+    for f in "$d"/python3.[0-9] "$d"/python3.[0-9][0-9]; do
+      [ -x "$f" ] && printf '%s\n' "$f"
+    done
+  done
+}
+
 check_python_interpreters() {
   section "Python on this machine"
   local py prefixes=$'\n' out prefix kind a b c where sites f any=0
-  for py in $(command -v python3 python 2>/dev/null) \
+  for py in $(command -v python3 python 2>/dev/null) $(versioned_pythons) \
             "${PYENV_ROOT:-$HOME/.pyenv}"/versions/*/bin/python3 \
             "$HOME"/miniconda3/bin/python3 "$HOME"/anaconda3/bin/python3 "$HOME"/miniforge3/bin/python3; do
     [ -x "$py" ] || continue
     out=$("$py" -I -c "$PY_PROBE" 2>/dev/null) || continue
-    prefix=$(printf '%s\n' "$out" | awk -F'\t' '$1 == "PREFIX" { print $2 }')
+    # interpreters of different versions can share a prefix (/usr) but not site-packages
+    prefix=$(printf '%s\n' "$out" | awk -F'\t' '$1 == "PREFIX" { p = $2 } $1 == "VERSION" { v = $2 } END { print p " (Python " v ")" }')
     case $prefixes in *$'\n'"$prefix"$'\n'*) continue ;; esac
     prefixes="$prefixes$prefix"$'\n'; any=1
     printf '  %s%s%s\n' "$C_DIM" "$prefix" "$C_RESET"

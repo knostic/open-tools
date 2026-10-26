@@ -10,7 +10,7 @@ The upstream fix is google/brotli commit `0ed4268`, released as Brotli **1.0.10 
 
 ### **Prerequisites**
 - bash 3.2+ (the macOS default works), plus standard `find`, `grep`, `sed` and `awk`
-- macOS or Linux
+- macOS or Linux (on Alpine and other BusyBox systems: `apk add bash grep`; BusyBox `grep` lacks options the script needs)
 - Optional: `node`, `bun`, `envoy`, `curl`, `python3`, `brew`, `dpkg`/`rpm`/`apk`, `php`, `gem` (each is checked only if present)
 
 ```bash
